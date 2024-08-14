@@ -134,10 +134,10 @@ contract SFT is Test {
         address[] memory temp2 = new address[](2);
         temp2[0] = address(safeMoon);
         temp2[1] = WETH;
+        temp.path = temp2;
 
         temp.to = payable(accountB);
         temp.deadline = block.timestamp + 1000 ;
-
 
         vm.prank(accountB);
         safeMoon.approve(address(safeSwapTradeRouter), 100 * 10 ** 9);

@@ -465,7 +465,6 @@ contract SafeSwapTradeRouter is Initializable {
     }
 
     modifier isSwapRangeValid(address[] memory _path) {
-        console.log("test");
         _isSwapRangeValid(_path);
         _;
     }
@@ -780,16 +779,10 @@ contract SafeSwapTradeRouter is Initializable {
      * @param trade Trade details
      */
     function swapExactTokensForETHAndFeeAmount(Trade memory trade) external payable isSwapRangeValid(trade.path) {
-        console.log("P0");
         uint256[] memory lastLpsPrices = _calcLpsLastPrice(trade.path);
 
-        console.log("P1");
-
         (, uint256 dexFee, uint256 tokenAFee, ) = getFees(trade.path, trade.amountIn, msg.sender);
-        console.log("P2");
         require(msg.value >= dexFee, "SafeswapRouter: You must send enough BNB to cover fee");
-
-        console.log("P3", dexFee, tokenAFee);
         _feeAmountBNB(address(this).balance);
 
         if (tokenAFee > 0) {
@@ -1276,7 +1269,6 @@ contract SafeSwapTradeRouter is Initializable {
 
     function _isLpPriceInRange(address _tokenA, address _tokenB) private returns (bool) {
         address pair = pairFor(_tokenA, _tokenB);
-        console.log("pairadd : " ,pair);
         (uint256 upl, uint256 lpl, uint256 lastPrice) = getAdaptiveLpPriceRange(pair);
 
         if (isARCBEnabled) {
@@ -1301,7 +1293,6 @@ contract SafeSwapTradeRouter is Initializable {
 
     function _isLpsPriceInRange(address[] memory _path) private returns (bool isInRange) {
         // if (isARCBEnabled) {
-        console.log("test2");
         for (uint256 i; i < _path.length - 1; i++) {
             // bool isLpPriceInRange = _isLpPriceInRange(_path[i], _path[i + 1]);
             if (!_isLpPriceInRange(_path[i], _path[i + 1])) {
