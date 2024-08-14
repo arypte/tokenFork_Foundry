@@ -213,7 +213,6 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         WBNB = uniswapV2Router.WETH();
         // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), WBNB, address(this));
-        console.log("pairadd : " ,address(uniswapV2Pair));
     }
 
     function __Safemoon_tiers_init() internal initializer {

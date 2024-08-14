@@ -36,6 +36,8 @@ contract SFT is Test {
         uint256 deadline;
         }
 
+    receive() external payable {}
+
     function setUp() public {
         safeMoon = new Safemoon();
         safeMoon.initialize();
@@ -75,6 +77,7 @@ contract SFT is Test {
 
         safeswapRouterProxy2 = new SafeswapRouterProxy2();
         safeswapRouterProxy1.setImpls(1,address(safeswapRouterProxy2));
+        safeswapRouterProxy1.setWhitelist(address(safeSwapTradeRouter),true);
 
         safeMoon.initRouterAndPair(address(safeswapRouterProxy1));
 
@@ -142,8 +145,12 @@ contract SFT is Test {
         vm.prank(accountB);
         safeMoon.approve(address(safeSwapTradeRouter), 100 * 10 ** 9);
         vm.prank(accountB);
-        safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount(temp);
-        
+        safeMoon.approve(address(safeswapRouterProxy1), 100 * 10 ** 9);
+        vm.prank(accountB);
+        safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{ value : 3573901284651791751 }(temp);
+
+        console.log("Bbal : " , safeMoon.balanceOf(accountB));
+        console.log("Cbal : " , safeMoon.balanceOf(accountC));
     }
 
 }

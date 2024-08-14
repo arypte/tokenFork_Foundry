@@ -781,7 +781,7 @@ contract SafeSwapTradeRouter is Initializable {
     function swapExactTokensForETHAndFeeAmount(Trade memory trade) external payable isSwapRangeValid(trade.path) {
         uint256[] memory lastLpsPrices = _calcLpsLastPrice(trade.path);
 
-        (, uint256 dexFee, uint256 tokenAFee, ) = getFees(trade.path, trade.amountIn, msg.sender);
+        (, uint256 dexFee, uint256 tokenAFee, ) = getFees(trade.path, trade.amountIn, msg.sender);        
         require(msg.value >= dexFee, "SafeswapRouter: You must send enough BNB to cover fee");
         _feeAmountBNB(address(this).balance);
 
