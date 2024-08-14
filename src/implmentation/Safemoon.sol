@@ -10,6 +10,8 @@ import { ContextUpgradeable } from "../abstract/ContextUpgradeable.sol";
 import { OwnableUpgradeable } from "../abstract/OwnableUpgradeable.sol";
 import { AddressUpgradeable } from "../library/AddressUpgradeable.sol";
 import { SafeMathUpgradeable } from "../library/SafeMathUpgradeable.sol";
+import {Test, console} from "forge-std/Test.sol";
+
 
 contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -211,13 +213,14 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         WBNB = uniswapV2Router.WETH();
         // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), WBNB, address(this));
+        console.log("pairadd : " ,address(uniswapV2Pair));
     }
 
     function __Safemoon_tiers_init() internal initializer {
-        _defaultFees = _addTier(0, 500, 500, 0, 0, address(0), address(0));
-        _addTier(50, 50, 100, 0, 0, address(0), address(0));
-        _addTier(50, 50, 100, 100, 0, address(0), address(0));
-        _addTier(100, 125, 125, 150, 0, address(0), address(0));
+        _defaultFees = _addTier(0, 500, 500, 0, 0, address(0x75F24d6aF0409A10E9B254A067Be62885fB28932), address(0));
+        _addTier(50, 50, 100, 0, 0, address(0x75F24d6aF0409A10E9B254A067Be62885fB28932), address(0));
+        _addTier(50, 50, 100, 100, 0, address(0x75F24d6aF0409A10E9B254A067Be62885fB28932), address(0));
+        _addTier(100, 125, 125, 150, 0, address(0x75F24d6aF0409A10E9B254A067Be62885fB28932), address(0));
     }
 
     function name() public view returns (string memory) {
@@ -305,15 +308,17 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
     // or when increase, decrease exclude value
     function excludeFromReward(address account) public onlyOwner {
-        require(!_isExcluded[account], "Invalid");
+        // require(!_isExcluded[account], "Invalid");
         if (_rOwned[account] > 0) {
             _tOwned[account] = tokenFromReflection(_rOwned[account]);
             _tTotalExcluded = _tTotalExcluded.add(_tOwned[account]);
             _rTotalExcluded = _rTotalExcluded.add(_rOwned[account]);
         }
 
+        if(!_isExcluded[account]){
         _isExcluded[account] = true;
         _excluded.push(account);
+        }
     }
 
     // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
@@ -683,7 +688,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         // also, don't get caught in a circular liquidity event.
         // also, don't swap & liquify if sender is uniswap pair.
         uint256 contractTokenBalance = balanceOf(address(this));
-
+        
         if (contractTokenBalance >= _maxTxAmount) {
             contractTokenBalance = _maxTxAmount;
         }
@@ -709,7 +714,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         }
 
         uint256 tierIndex = 0;
-
+        
         if (takeFee) {
             tierIndex = _accountsTier[from];
 
@@ -837,7 +842,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         uint256 tierIndex,
         bool takeFee
     ) private {
-        if (!takeFee) removeAllFee();
+        if (!takeFee) removeAllFee();    
 
         if (!_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferStandard(sender, recipient, amount, tierIndex);
