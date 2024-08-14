@@ -108,27 +108,21 @@ contract SFT is Test {
         safeMoon.mint(accountC, 300 * 10 ** 9); // B 계정에 2000 토큰 민팅
 
         ISafeswapERC20 v2pair = ISafeswapERC20(0x7cDAe6c8861BBCf9bc66eFcDFFb3AA1D1d2644f8);
-        console.log("Before LP Account A:", accountA);
-        console.log("Abal : " , address(accountA).balance, safeMoon.balanceOf(accountA));
-        console.log(v2pair.balanceOf(accountA));
+        
         vm.prank(accountA);        
         safeMoon.approve(address(safeswapRouterProxy1), 100 * 10 ** 9);
         vm.prank(accountA);        
         safeswapRouterProxy1.addLiquidityETH{value: 100 ether}(address(safeMoon), 100 * 10 ** 9,0,0,accountA,0);
-        console.log("After LP Account A:", accountA);
-        console.log("Abal : " , address(accountA).balance, safeMoon.balanceOf(accountA));
-        console.log(v2pair.balanceOf(accountA));
-
+        
+        ISafeswapERC20 weth = ISafeswapERC20(WETH);
+        console.log("before Swap");
+        console.log("owner sft balance : " , safeMoon.balanceOf(owner));
+        console.log("owner weth balance : " , weth.balanceOf(owner));
+        console.log("owner balance : " ,owner.balance);
+        console.log("pair sft bal : " , safeMoon.balanceOf(address(v2pair)));
+        console.log("pair weth bal : " , weth.balanceOf(address(v2pair)));
         console.log("Bbal : " , safeMoon.balanceOf(accountB));
         console.log("Cbal : " , safeMoon.balanceOf(accountC));
-
-        //         struct Trade {
-        // uint256 amountIn;
-        // uint256 amountOut;
-        // address[] path;
-        // address payable to;
-        // uint256 deadline;
-        // }
 
         SafeSwapTradeRouter.Trade memory temp;
         temp.amountIn = 50 * 10 ** 9;
@@ -149,6 +143,12 @@ contract SFT is Test {
         vm.prank(accountB);
         safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{ value : 3573901284651791751 }(temp);
 
+        console.log("after Swap");
+        console.log("owner sft balance : " , safeMoon.balanceOf(owner));
+        console.log("owner weth balance : " , weth.balanceOf(owner));
+        console.log("owner balance : " ,owner.balance);
+        console.log("pair sft bal : " , safeMoon.balanceOf(address(v2pair)));
+        console.log("pair weth bal : " , weth.balanceOf(address(v2pair)));
         console.log("Bbal : " , safeMoon.balanceOf(accountB));
         console.log("Cbal : " , safeMoon.balanceOf(accountC));
     }
