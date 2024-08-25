@@ -28,13 +28,13 @@ contract SFT is Test {
     // base weth : 0x4200000000000000000000000000000000000006
     // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
 
-        struct Trade {
+    struct Trade {
         uint256 amountIn;
         uint256 amountOut;
         address[] path;
         address payable to;
         uint256 deadline;
-        }
+    }
 
     receive() external payable {}
 
@@ -59,15 +59,15 @@ contract SFT is Test {
 
         feeJar = new FeeJar();
         feeJar.initialize(
-        address(owner),  // _feeJarAdmin
-        address(owner),  // _feeSetter
-        address(owner),  // _buyBackAndBurnFeeCollector
-        address(owner),  // _lpFeeCollector
-        address(safeswapFactory),  // _factory
-        10000,                                      // _maxPercentage (100%)
-        100,                                        // _buyBackAndBurnFee (1%)
-        100,                                         // _lpFee (0.5%)
-        100                                          // _supportFee (0.5%)
+            address(owner),  // _feeJarAdmin
+            address(owner),  // _feeSetter
+            address(owner),  // _buyBackAndBurnFeeCollector
+            address(owner),  // _lpFeeCollector
+            address(safeswapFactory),  // _factory
+            10000,                                      // _maxPercentage (100%)
+            100,                                        // _buyBackAndBurnFee (1%)
+            100,                                         // _lpFee (0.5%)
+            100                                          // _supportFee (0.5%)
         );
 
         safeSwapTradeRouter = new SafeSwapTradeRouter();
