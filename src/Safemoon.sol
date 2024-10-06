@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ISafemoon } from "../interfaces/ISafemoon.sol";
-import { ISafeSwapTradeRouter } from "../interfaces/ISafeSwapTradeRouter.sol";
-import { IUniswapV2Router02 } from "../interfaces/IUniswapV2Router02.sol";
-import { IUniswapV2Factory } from "../interfaces/IUniswapV2Factory.sol";
-import { Initializable } from "../abstract/ContextUpgradeable.sol";
-import { ContextUpgradeable } from "../abstract/ContextUpgradeable.sol";
-import { OwnableUpgradeable } from "../abstract/OwnableUpgradeable.sol";
-import { AddressUpgradeable } from "../library/AddressUpgradeable.sol";
-import { SafeMathUpgradeable } from "../library/SafeMathUpgradeable.sol";
-import {Test, console} from "forge-std/Test.sol";
+import { ISafemoon } from "./interfaces/SafeMoon/ISafemoon.sol";
+import { ISafeSwapTradeRouter } from "./interfaces/SafeMoon/ISafeSwapTradeRouter.sol";
+import { IUniswapV2Router02 } from "./interfaces/IUniswapV2Router02.sol";
+import { IUniswapV2Factory } from "./interfaces/IUniswapV2Factory.sol";
+import { Initializable } from "./lib/openzeppelin/Initializable.sol";
+import { ContextUpgradeable } from "./lib/openzeppelin/ContextUpgradeable.sol";
+import { OwnableUpgradeable } from "./lib/openzeppelin/OwnableUpgradeable.sol";
+import { AddressUpgradeable } from "./lib/openzeppelin/AddressUpgradeable.sol";
+import { SafeMathUpgradeable } from "./lib/SafeMathUpgradeable.sol";
 
 
 contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgradeable {
@@ -213,7 +212,6 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         WBNB = uniswapV2Router.WETH();
         // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), WBNB, address(this));
-        console.log("pairadd : " ,address(uniswapV2Pair));
     }
 
     function __Safemoon_tiers_init() internal initializer {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { AddressUpgradeable } from "../library/AddressUpgradeable.sol" ;
+import { AddressUpgradeable } from "./AddressUpgradeable.sol";
 
 abstract contract Initializable {
     /**

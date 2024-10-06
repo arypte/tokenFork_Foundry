@@ -114,7 +114,6 @@ interface ISafeswapERC20 {
 
 // File contracts/SafeswapERC20.sol
 
-
 contract SafeswapERC20 is ISafeswapERC20 {
 
     string public constant name = "Safeswap LPs";
