@@ -81,12 +81,21 @@ import {SafeswapLibrary} from "../library/SafeSwapLibrary.sol";
 import {TransferHelper} from "../library/TransferHelper.sol";
 
 contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
+
+    /*========================================================================================================================*/
+    /*======================================================== states ========================================================*/
+    /*========================================================================================================================*/
+
     uint256 public constant ONE = 1e18;
     address public override factory;
     address public override WETH;
     bool private killSwitch;
     address public admin;
     uint256 tokensCount;
+
+    /*========================================================================================================================*/
+    /*======================================================= mappings =======================================================*/
+    /*========================================================================================================================*/
 
     mapping(address => bool) private _lpTokenLockStatus;
     mapping(address => uint256) private _locktime;
@@ -95,6 +104,10 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
     address public routerTrade;
     mapping(address => bool) public whitelistAccess;
     mapping(uint256 => address) public impls;
+
+    /*========================================================================================================================*/
+    /*======================================================== events ========================================================*/
+    /*========================================================================================================================*/
 
     event isSwiched(bool newSwitch);
 
@@ -109,6 +122,10 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
 
     event UnregisterToken(address tokenAddress);
 
+    /*========================================================================================================================*/
+    /*======================================================= structs ========================================================*/
+    /*========================================================================================================================*/
+
     struct TokenInfo {
         bool enabled;
         bool isDeleted;
@@ -119,41 +136,9 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         uint256 sellFeePercent;
     }
 
-    function initialize(address _factory, address _WETH) external initializer {
-        factory = _factory;
-        WETH = _WETH;
-        admin = msg.sender;
-        tokensCount = 0;
-        killSwitch = false;
-    }
-
-    function setRouterTrade(address _routerTrade) override public onlyOwner {
-        routerTrade = _routerTrade;
-    }
-
-    function setWhitelist(address _user, bool _status) override external onlyOwner {
-        whitelistAccess[_user] = _status;
-    }
-
-    function version() public view returns (uint256) {
-        return 1;
-    }
-
-    function setImpls(uint256 _implIndex, address _impl) public override onlyOwner {
-        impls[_implIndex] = _impl;
-    }
-
-    function _onlyOwner() private view {
-        require(admin == msg.sender, "Ownable: caller is not the owner");
-    }
-
-    function _ensure(uint256 deadline) private view {
-        require(deadline >= block.timestamp, "SafeswapRouter: EXPIRED");
-    }
-
-    function _onlyRouterTrade() private view {
-        require(msg.sender == routerTrade, "SafeswapRouter: ONLY_ROUTER_TRADE");
-    }
+    /*========================================================================================================================*/
+    /*====================================================== modifiers =======================================================*/
+    /*========================================================================================================================*/
 
     modifier onlyOwner() {
         _onlyOwner();
@@ -169,74 +154,26 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         _;
     }
 
-    function _onlyWhitelist() private view {
-        require(whitelistAccess[msg.sender], "SafeswapRouter: ONLY_WHITELIST");
-    }
-
     modifier onlyWhitelist() {
         _onlyWhitelist();
         _;
     }
 
-    receive() external payable {}
-    fallback() external {
-        _delegate(impls[version()]);
+    /*========================================================================================================================*/
+    /*====================================================== initialize ======================================================*/
+    /*========================================================================================================================*/
+
+    function initialize(address _factory, address _WETH) external initializer {
+        factory = _factory;
+        WETH = _WETH;
+        admin = msg.sender;
+        tokensCount = 0;
+        killSwitch = false;
     }
 
-    function _delegate(address _impl) internal virtual {
-        assembly {
-        // Copy msg.data. We take full control of memory in this inline assembly
-        // block because it will not return to Solidity code. We overwrite the
-        // Solidity scratch pad at memory position 0.
-            calldatacopy(0, 0, calldatasize())
-
-        // Call the implementation.
-        // out and outsize are 0 because we don't know the size yet.
-            let result := delegatecall(gas(), _impl, 0, calldatasize(), 0, 0)
-
-        // Copy the returned data.
-            returndatacopy(0, 0, returndatasize())
-
-            switch result
-            // delegatecall returns 0 on error.
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return(0, returndatasize())
-            }
-        }
-    }
-
-    function _addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to
-    ) internal virtual returns (uint256 amountA, uint256 amountB) {
-        // create the pair if it doesn't exist yet
-        if (ISafeswapFactory(factory).getPair(tokenA, tokenB) == address(0)) {
-            ISafeswapFactory(factory).createPair(tokenA, tokenB, to);
-        }
-        (uint256 reserveA, uint256 reserveB) = SafeswapLibrary.getReserves(factory, tokenA, tokenB);
-        if (reserveA == 0 && reserveB == 0) {
-            (amountA, amountB) = (amountADesired, amountBDesired);
-        } else {
-            uint256 amountBOptimal = SafeswapLibrary.quote(amountADesired, reserveA, reserveB);
-            if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, "SafeswapRouter: INSUFFICIENT_B_AMOUNT");
-                (amountA, amountB) = (amountADesired, amountBOptimal);
-            } else {
-                uint256 amountAOptimal = SafeswapLibrary.quote(amountBDesired, reserveB, reserveA);
-                assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, "SafeswapRouter: INSUFFICIENT_A_AMOUNT");
-                (amountA, amountB) = (amountAOptimal, amountBDesired);
-            }
-        }
-    }
+    /*========================================================================================================================*/
+    /*=================================================== public functions ===================================================*/
+    /*========================================================================================================================*/
 
     function addLiquidity(
         address tokenA,
@@ -300,8 +237,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
     }
 
-    // **** REMOVE LIQUIDITY ****
-    function removeLiquidity(
+        function removeLiquidity(
         address tokenA,
         address tokenB,
         uint256 liquidity,
@@ -341,41 +277,9 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         TransferHelper.safeTransfer(token, to, amountToken);
     }
 
-    function removeLiquidityWithPermit(
-        address tokenA,
-        address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override returns (uint256 amountA, uint256 amountB) {
-        address pair = SafeswapLibrary.pairFor(factory, tokenA, tokenB);
-        uint256 value = approveMax ? type(uint256).max : liquidity;
-        ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
-    }
-
-    function removeLiquidityETHWithPermit(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override returns (uint256 amountToken, uint256 amountETH) {
-        address pair = SafeswapLibrary.pairFor(factory, token, WETH);
-        uint256 value = approveMax ? type(uint256).max : liquidity;
-        ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
+    function lockLP(address LPtoken, uint256 time) public onlyOwner {
+        _lpTokenLockStatus[LPtoken] = true;
+        _locktime[LPtoken] = block.timestamp + time;
     }
 
     // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens) ****
@@ -392,55 +296,12 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         TransferHelper.safeTransferETH(to, amountETH);
         TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
     }
+    /*========================================================================================================================*/
+    /*================================================== external functions ==================================================*/
+    /*========================================================================================================================*/
 
-    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external virtual override returns (uint256 amountETH) {
-        address pair = SafeswapLibrary.pairFor(factory, token, WETH);
-        uint256 value = approveMax ? type(uint256).max : liquidity;
-        ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
-            token,
-            liquidity,
-            amountTokenMin,
-            amountETHMin,
-            to,
-            deadline
-        );
-    }
-
-    // **** SWAP ****
+        // **** SWAP ****
     // requires the initial amount to have already been sent to the first pair
-    function _swap(
-        uint256[] memory amounts,
-        address[] memory path,
-        address _to
-    ) internal virtual {
-        for (uint256 i; i < path.length - 1; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
-            uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) = input == token0
-                ? (uint256(0), amountOut)
-                : (amountOut, uint256(0));
-            address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
-            ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output)).swap(
-                amount0Out,
-                amount1Out,
-                to,
-                new bytes(0)
-            );
-        }
-    }
 
     function swapExactETHForTokens(
         uint256 amountOutMin,
@@ -537,34 +398,48 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         if (msg.value > amounts[0]) TransferHelper.safeTransferETH(to, msg.value - amounts[0]);
     }
 
-    function _swapSupportingFeeOnTransferTokens(address[] memory path, address _to)
-        internal
-        virtual
-        returns (uint256 amount0Out, uint256 amount1Out)
-    {
-        for (uint256 i; i < path.length - 1; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
-            ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
-            uint256 amountInput;
-            uint256 amountOutput;
-            {
-                // scope to avoid stack too deep errors
-                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) = input == token0
-                    ? (reserve0, reserve1)
-                    : (reserve1, reserve0);
-                amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
-                amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
-            }
-            if (nameToInfo[output].enabled == true && killSwitch == false && (nameToInfo[output].buyFeePercent > 0)) {
-                uint256 deduction = (amountOutput * nameToInfo[output].buyFeePercent) / ONE;
-                amountOutput = amountOutput - deduction;
-            }
-            (amount0Out, amount1Out) = input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-            address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
-            pair.swap(amount0Out, amount1Out, to, new bytes(0));
-        }
+        function removeLiquidityWithPermit(
+        address tokenA,
+        address tokenB,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual override returns (uint256 amountA, uint256 amountB) {
+        address pair = SafeswapLibrary.pairFor(factory, tokenA, tokenB);
+        uint256 value = approveMax ? type(uint256).max : liquidity;
+        ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
+    }
+
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual override returns (uint256 amountETH) {
+        address pair = SafeswapLibrary.pairFor(factory, token, WETH);
+        uint256 value = approveMax ? type(uint256).max : liquidity;
+        ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
+            token,
+            liquidity,
+            amountTokenMin,
+            amountETHMin,
+            to,
+            deadline
+        );
     }
 
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
@@ -610,38 +485,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         TransferHelper.safeTransferETH(to, amountOut);
     }
 
-
-
-    function _swapSupportingFeeOnTransferTokensForV1(address[] memory path, address _to)
-    internal
-    virtual
-    returns (uint256 amount0Out, uint256 amount1Out)
-    {
-        for (uint256 i; i < path.length - 1; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
-            ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
-            uint256 amountInput;
-            uint256 amountOutput;
-            {
-                // scope to avoid stack too deep errors
-                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) = input == token0
-                ? (reserve0, reserve1)
-                : (reserve1, reserve0);
-                amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
-                amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
-            }
-            if (nameToInfo[output].enabled == true && killSwitch == false && (nameToInfo[output].buyFeePercent > 0)) {
-                uint256 deduction = (amountOutput * nameToInfo[output].buyFeePercent) / ONE;
-                amountOutput = amountOutput - deduction;
-            }
-            (amount0Out, amount1Out) = input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-            address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
-            pair.swap(amount0Out, amount1Out, to, new bytes(0));
-        }
-    }
-
+    
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -719,39 +563,172 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
 
-    // **** LIBRARY FUNCTIONS ****
-    function quote(
-        uint256 amountA,
-        uint256 reserveA,
-        uint256 reserveB
-    ) public pure virtual override returns (uint256 amountB) {
-        return SafeswapLibrary.quote(amountA, reserveA, reserveB);
+    function removeLiquidityETHWithPermit(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual override returns (uint256 amountToken, uint256 amountETH) {
+        address pair = SafeswapLibrary.pairFor(factory, token, WETH);
+        uint256 value = approveMax ? type(uint256).max : liquidity;
+        ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
 
-    function getAmountOut(
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) public pure virtual override returns (uint256 amountOut) {
-        return SafeswapLibrary.getAmountOut(amountIn, reserveIn, reserveOut);
+    /*========================================================================================================================*/
+    /*================================================== internal functions ==================================================*/
+    /*========================================================================================================================*/
+
+    function _addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to
+    ) internal virtual returns (uint256 amountA, uint256 amountB) {
+        // create the pair if it doesn't exist yet
+        if (ISafeswapFactory(factory).getPair(tokenA, tokenB) == address(0)) {
+            ISafeswapFactory(factory).createPair(tokenA, tokenB, to);
+        }
+        (uint256 reserveA, uint256 reserveB) = SafeswapLibrary.getReserves(factory, tokenA, tokenB);
+        if (reserveA == 0 && reserveB == 0) {
+            (amountA, amountB) = (amountADesired, amountBDesired);
+        } else {
+            uint256 amountBOptimal = SafeswapLibrary.quote(amountADesired, reserveA, reserveB);
+            if (amountBOptimal <= amountBDesired) {
+                require(amountBOptimal >= amountBMin, "SafeswapRouter: INSUFFICIENT_B_AMOUNT");
+                (amountA, amountB) = (amountADesired, amountBOptimal);
+            } else {
+                uint256 amountAOptimal = SafeswapLibrary.quote(amountBDesired, reserveB, reserveA);
+                assert(amountAOptimal <= amountADesired);
+                require(amountAOptimal >= amountAMin, "SafeswapRouter: INSUFFICIENT_A_AMOUNT");
+                (amountA, amountB) = (amountAOptimal, amountBDesired);
+            }
+        }
     }
 
-    function getAmountIn(
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) public pure virtual override returns (uint256 amountIn) {
-        return SafeswapLibrary.getAmountIn(amountOut, reserveIn, reserveOut);
+
+    function _swap(
+        uint256[] memory amounts,
+        address[] memory path,
+        address _to
+    ) internal virtual {
+        for (uint256 i; i < path.length - 1; i++) {
+            (address input, address output) = (path[i], path[i + 1]);
+            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            uint256 amountOut = amounts[i + 1];
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOut)
+                : (amountOut, uint256(0));
+            address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output)).swap(
+                amount0Out,
+                amount1Out,
+                to,
+                new bytes(0)
+            );
+        }
     }
 
-    function getAmountsOut(uint256 amountIn, address[] memory path)
-        public
-        view
+    function _swapSupportingFeeOnTransferTokens(address[] memory path, address _to)
+        internal
         virtual
-        override
-        returns (uint256[] memory amounts)
+        returns (uint256 amount0Out, uint256 amount1Out)
     {
-        return SafeswapLibrary.getAmountsOut(factory, amountIn, path);
+        for (uint256 i; i < path.length - 1; i++) {
+            (address input, address output) = (path[i], path[i + 1]);
+            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
+            uint256 amountInput;
+            uint256 amountOutput;
+            {
+                // scope to avoid stack too deep errors
+                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) = input == token0
+                    ? (reserve0, reserve1)
+                    : (reserve1, reserve0);
+                amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
+                amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+            }
+            if (nameToInfo[output].enabled == true && killSwitch == false && (nameToInfo[output].buyFeePercent > 0)) {
+                uint256 deduction = (amountOutput * nameToInfo[output].buyFeePercent) / ONE;
+                amountOutput = amountOutput - deduction;
+            }
+            (amount0Out, amount1Out) = input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+            address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            pair.swap(amount0Out, amount1Out, to, new bytes(0));
+        }
+    }
+
+    function _delegate(address _impl) internal virtual {
+        assembly {
+        // Copy msg.data. We take full control of memory in this inline assembly
+        // block because it will not return to Solidity code. We overwrite the
+        // Solidity scratch pad at memory position 0.
+            calldatacopy(0, 0, calldatasize())
+
+        // Call the implementation.
+        // out and outsize are 0 because we don't know the size yet.
+            let result := delegatecall(gas(), _impl, 0, calldatasize(), 0, 0)
+
+        // Copy the returned data.
+            returndatacopy(0, 0, returndatasize())
+
+            switch result
+            // delegatecall returns 0 on error.
+            case 0 {
+                revert(0, returndatasize())
+            }
+            default {
+                return(0, returndatasize())
+            }
+        }
+    }
+
+    function _swapSupportingFeeOnTransferTokensForV1(address[] memory path, address _to)
+    internal
+    virtual
+    returns (uint256 amount0Out, uint256 amount1Out)
+    {
+        for (uint256 i; i < path.length - 1; i++) {
+            (address input, address output) = (path[i], path[i + 1]);
+            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
+            uint256 amountInput;
+            uint256 amountOutput;
+            {
+                // scope to avoid stack too deep errors
+                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) = input == token0
+                ? (reserve0, reserve1)
+                : (reserve1, reserve0);
+                amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
+                amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+            }
+            if (nameToInfo[output].enabled == true && killSwitch == false && (nameToInfo[output].buyFeePercent > 0)) {
+                uint256 deduction = (amountOutput * nameToInfo[output].buyFeePercent) / ONE;
+                amountOutput = amountOutput - deduction;
+            }
+            (amount0Out, amount1Out) = input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+            address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            pair.swap(amount0Out, amount1Out, to, new bytes(0));
+        }
+    }
+
+    /*========================================================================================================================*/
+    /*================================================= public view functions ================================================*/
+    /*========================================================================================================================*/
+
+    function version() public view returns (uint256) {
+        return 1;
     }
 
     function getAmountsIn(uint256 amountOut, address[] memory path)
@@ -764,8 +741,91 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         return SafeswapLibrary.getAmountsIn(factory, amountOut, path);
     }
 
-    function lockLP(address LPtoken, uint256 time) public onlyOwner {
-        _lpTokenLockStatus[LPtoken] = true;
-        _locktime[LPtoken] = block.timestamp + time;
+    /*========================================================================================================================*/
+    /*================================================= private view functions ===============================================*/
+    /*========================================================================================================================*/
+
+    function _onlyWhitelist() private view {
+        require(whitelistAccess[msg.sender], "SafeswapRouter: ONLY_WHITELIST");
     }
+
+    function _ensure(uint256 deadline) private view {
+        require(deadline >= block.timestamp, "SafeswapRouter: EXPIRED");
+    }
+
+    function _onlyRouterTrade() private view {
+        require(msg.sender == routerTrade, "SafeswapRouter: ONLY_ROUTER_TRADE");
+    }
+
+    function _onlyOwner() private view {
+        require(admin == msg.sender, "Ownable: caller is not the owner");
+    }
+
+    /*========================================================================================================================*/
+    /*================================================== public pure functions ===============================================*/
+    /*========================================================================================================================*/
+
+    // **** LIBRARY FUNCTIONS ****
+    function quote(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) public pure virtual override returns (uint256 amountB) {
+        return SafeswapLibrary.quote(amountA, reserveA, reserveB);
+    }
+
+    function getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) public pure virtual override returns (uint256 amountIn) {
+        return SafeswapLibrary.getAmountIn(amountOut, reserveIn, reserveOut);
+    }
+
+
+    function getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) public pure virtual override returns (uint256 amountOut) {
+        return SafeswapLibrary.getAmountOut(amountIn, reserveIn, reserveOut);
+    }
+
+    function getAmountsOut(uint256 amountIn, address[] memory path)
+        public
+        view
+        virtual
+        override
+        returns (uint256[] memory amounts)
+    {
+        return SafeswapLibrary.getAmountsOut(factory, amountIn, path);
+    }
+
+    /*========================================================================================================================*/
+    /*======================================================= fallbacks ======================================================*/
+    /*========================================================================================================================*/
+
+    receive() external payable {}
+
+    fallback() external {
+        _delegate(impls[version()]);
+    }
+
+    /*========================================================================================================================*/
+    /*====================================================== Only Owner ======================================================*/
+    /*========================================================================================================================*/
+
+    function setRouterTrade(address _routerTrade) override public onlyOwner {
+        routerTrade = _routerTrade;
+    }
+
+    function setWhitelist(address _user, bool _status) override external onlyOwner {
+        whitelistAccess[_user] = _status;
+    }
+
+    function setImpls(uint256 _implIndex, address _impl) public override onlyOwner {
+        impls[_implIndex] = _impl;
+    }
+
+
 }

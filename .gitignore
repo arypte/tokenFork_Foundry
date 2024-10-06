@@ -16,3 +16,4 @@ docs/
 # etc
 .DS_Store
 .clone.meta
+Format.sol
