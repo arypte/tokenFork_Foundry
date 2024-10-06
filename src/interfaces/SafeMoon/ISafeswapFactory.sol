@@ -1,9 +1,16 @@
+// File contracts/interfaces/ISafeswapFactory.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.11;
 interface ISafeswapFactory {
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+    event PairCreated(address indexed token0, address indexed token1, address pair, uint256 length);
 
     function feeTo() external view returns (address);
 
     function router() external view returns (address);
+    
+    function implementation() external view returns (address);
 
     function feeToSetter() external view returns (address);
 
@@ -24,4 +31,21 @@ interface ISafeswapFactory {
         address tokenB,
         address to
     ) external returns (address pair);
+
+    function setFeeTo(address) external;
+
+    function setFeeToSetter(address) external;
+
+//    function getFeeConfig() external view returns (FeeConfig memory);
+//
+//    function getTotalFee() external view returns (uint256, uint256);
+//
+//    struct FeeConfig {
+//        address feeTo;
+//        address buyBackWallet;
+//        uint256 companyFeePercent;
+//        uint256 buyBackFeePercent;
+//        uint256 lpFeePercent;
+//        uint256 precision;
+//    }
 }

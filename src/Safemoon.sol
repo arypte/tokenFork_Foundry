@@ -1140,7 +1140,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         _maxTxAmount = _tTotal.mul(maxTxPercent).div(10**4);
     }
 
-        function swapAndEvolve() public onlyOwner lockTheSwap {
+    function swapAndEvolve() public onlyOwner lockTheSwap {
         // split the contract balance into halves
         uint256 contractBnbBalance = address(this).balance;
         require(contractBnbBalance >= numOfBnbToSwapAndEvolve, "BNB balance is not reach for S&E Threshold");
