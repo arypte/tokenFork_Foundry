@@ -13,11 +13,20 @@ import {ISafeswapFactory} from "./interfaces/SafeMoon/ISafeswapFactory.sol";
  * @dev Allows split SFM SwapRouter Fee
  */
 contract FeeJar is AccessControlUpgradeable {
+
+    /*========================================================================================================================*/
+    /*======================================================= constants ======================================================*/
+    /*========================================================================================================================*/
+
     /// @notice FeeJar Admin role
     bytes32 public constant FEE_JAR_ADMIN_ROLE = keccak256("FEE_JAR_ADMIN_ROLE");
 
     /// @notice Fee setter role
     bytes32 public constant FEE_SETTER_ROLE = keccak256("FEE_SETTER_ROLE");
+
+    /*========================================================================================================================*/
+    /*======================================================== states ========================================================*/
+    /*========================================================================================================================*/
 
     /// @notice Network fee (measured in bips: 100 bips = 1% of contract balance)
     uint32 public buyBackAndBurnFee;
@@ -30,6 +39,10 @@ contract FeeJar is AccessControlUpgradeable {
     /// @notice Network fee output address
     address public buyBackAndBurnFeeCollector;
     address public lpFeeCollector;
+
+    /*========================================================================================================================*/
+    /*======================================================== events ========================================================*/
+    /*========================================================================================================================*/
 
     /// @notice Network Fee set event
     event BuyBackAndBurnFeeSet(uint32 indexed newFee, uint32 indexed oldFee);
@@ -58,6 +71,10 @@ contract FeeJar is AccessControlUpgradeable {
         address lpFeeCollector // lpFeeCollector
     );
 
+    /*========================================================================================================================*/
+    /*====================================================== modifiers =======================================================*/
+    /*========================================================================================================================*/
+
     /// @notice modifier to restrict functions to admins
     modifier onlyAdmin() {
         require(hasRole(FEE_JAR_ADMIN_ROLE, msg.sender), "Caller must have FEE_JAR_ADMIN_ROLE role");
@@ -69,6 +86,10 @@ contract FeeJar is AccessControlUpgradeable {
         require(hasRole(FEE_SETTER_ROLE, msg.sender), "Caller must have FEE_SETTER_ROLE role");
         _;
     }
+
+    /*========================================================================================================================*/
+    /*====================================================== initialize ======================================================*/
+    /*========================================================================================================================*/
 
     /// @notice Initializes contract, setting admin roles + network fee
     /// @param _feeJarAdmin admin of fee pool
@@ -120,34 +141,14 @@ contract FeeJar is AccessControlUpgradeable {
         maxPercentage = _maxPercentage;
     }
 
-    /// @notice Receive function to allow contract to accept ETH
-    receive() external payable {}
+    /*========================================================================================================================*/
+    /*=================================================== public functions ===================================================*/
+    /*========================================================================================================================*/
 
-    /// @notice Fallback function to allow contract to accept ETH
-    fallback() external payable {}
-
-    /**
-     * @notice Return fees amount based on the total fee
-     * @param totalFee total fee
-     */
-    function getFeeAmount(uint256 totalFee)
-        public
-        view
-        returns (
-            uint256 buyBackAndBurnFeeAmount,
-            uint256 supportFeeAmount,
-            uint256 lpFeeAmount
-        )
-    {
-        if (buyBackAndBurnFee > 0) {
-            buyBackAndBurnFeeAmount = (totalFee * buyBackAndBurnFee) / maxPercentage;
-        }
-        if (lpFee > 0) {
-            lpFeeAmount = (totalFee * lpFee) / maxPercentage;
-        }
-        if (supportFee > 0) {
-            supportFeeAmount = (totalFee * supportFee) / maxPercentage;
-        }
+    function withdrawBNB(address payable to) public onlyAdmin {
+        uint256 amount = address(this).balance;
+        to.transfer(amount);
+        emit WithdrawBNB(to, amount);
     }
 
     /**
@@ -204,6 +205,10 @@ contract FeeJar is AccessControlUpgradeable {
         return (buyBackAndBurnFeeAmount, supportFeeAmount, lpFeeAmount);
     }
 
+    /*========================================================================================================================*/
+    /*================================================== external functions ==================================================*/
+    /*========================================================================================================================*/
+
     /**
      * @notice Admin function to set network fee
      * @param newFee new fee
@@ -234,6 +239,50 @@ contract FeeJar is AccessControlUpgradeable {
         supportFee = newFee;
     }
 
+
+
+    /*========================================================================================================================*/
+    /*================================================= public view functions ================================================*/
+    /*========================================================================================================================*/
+
+    /**
+     * @notice Return fees amount based on the total fee
+     * @param totalFee total fee
+     */
+    function getFeeAmount(uint256 totalFee)
+        public
+        view
+        returns (
+            uint256 buyBackAndBurnFeeAmount,
+            uint256 supportFeeAmount,
+            uint256 lpFeeAmount
+        )
+    {
+        if (buyBackAndBurnFee > 0) {
+            buyBackAndBurnFeeAmount = (totalFee * buyBackAndBurnFee) / maxPercentage;
+        }
+        if (lpFee > 0) {
+            lpFeeAmount = (totalFee * lpFee) / maxPercentage;
+        }
+        if (supportFee > 0) {
+            supportFeeAmount = (totalFee * supportFee) / maxPercentage;
+        }
+    }
+
+    /*========================================================================================================================*/
+    /*======================================================= fallbacks ======================================================*/
+    /*========================================================================================================================*/
+
+    /// @notice Receive function to allow contract to accept ETH
+    receive() external payable {}
+
+    /// @notice Fallback function to allow contract to accept ETH
+    fallback() external payable {}
+
+    /*========================================================================================================================*/
+    /*====================================================== Only Admin ======================================================*/
+    /*========================================================================================================================*/
+
     /**
      * @notice Admin function to set network fee collector address
      * @param newCollector new fee collector address
@@ -250,11 +299,5 @@ contract FeeJar is AccessControlUpgradeable {
     function setLPFeeCollector(address newCollector) external onlyAdmin {
         emit LPFeeCollectorSet(newCollector, lpFeeCollector);
         lpFeeCollector = newCollector;
-    }
-
-    function withdrawBNB(address payable to) public onlyAdmin {
-        uint256 amount = address(this).balance;
-        to.transfer(amount);
-        emit WithdrawBNB(to, amount);
     }
 }
