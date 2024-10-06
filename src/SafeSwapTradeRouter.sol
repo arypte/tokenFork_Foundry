@@ -194,142 +194,16 @@ interface IFeeJar {
     function fee() external payable;
 }
 
-/**
- * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
- * behind a proxy. Since a proxied contract can't have a constructor, it's common to move constructor logic to an
- * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer
- * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.
- *
- * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as
- * possible by providing the encoded function call as the `_data` argument to {UpgradeableProxy-constructor}.
- *
- * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure
- * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.
- */
-contract Initializable {
-    /**
-     * @dev Indicates that the contract has been initialized.
-     */
-    bool private _initialized;
+import {Initializable} from "./lib/openzeppelin/Initializable.sol";
 
-    /**
-     * @dev Indicates that the contract is in the process of being initialized.
-     */
-    bool private _initializing;
+import {IERC20} from "./IERC20.sol";
 
-    /**
-     * @dev Modifier to protect an initializer function from being invoked twice.
-     */
-    modifier initializer() {
-        require(
-            _initializing || !_initialized,
-            "Initializable: contract is already initialized"
-        );
+import {ISafeswapFactory} from "./interfaces/SafeMoon/ISafeswapFactory.sol";
 
-        bool isTopLevelCall = !_initializing;
-        if (isTopLevelCall) {
-            _initializing = true;
-            _initialized = true;
-        }
+import {ISafeswapPair} from "./interfaces/SafeMoon/ISafeswapPair.sol";
 
-        _;
+import {TransferHelper} from "./library/TransferHelper.sol";
 
-        if (isTopLevelCall) {
-            _initializing = false;
-        }
-    }
-
-    /// @dev Returns true if and only if the function is running in the constructor
-    function _isConstructor() private view returns (bool) {
-        // extcodesize checks the size of the code stored in an address, and
-        // address returns the current address. Since the code is still not
-        // deployed when running a constructor, any checks on its code size will
-        // yield zero, making it an effective way to detect if a contract is
-        // under construction or not.
-        address self = address(this);
-        uint256 cs;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            cs := extcodesize(self)
-        }
-        return cs == 0;
-    }
-}
-
-interface IERC20 {
-    function balanceOf(address owner) external view returns (uint256);
-
-    function decimals() external pure returns (uint8);
-}
-
-interface ISafeswapFactory {
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
-interface ISafeswapPair {
-    function token0() external view returns (address);
-
-    function token1() external view returns (address);
-
-    function sync() external;
-
-    function getReserves()
-        external
-        view
-        returns (
-            uint112,
-            uint112,
-            uint32
-        );
-}
-
-library TransferHelper {
-    function safeTransferETH(address to, uint256 value) internal {
-        (bool success, ) = to.call{ value: value }(new bytes(0));
-        require(success, "SafeSwapTradeRouter::safeTransferETH: ETH transfer failed");
-    }
-
-    function safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "SafeSwapTradeRouter::safeTransfer: transfer failed"
-        );
-    }
-
-    function safeTransferFrom(
-        address token,
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "SafeSwapTradeRouter::transferFrom: transferFrom failed"
-        );
-    }
-
-    function safeApprove(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
-        // bytes4(keccak256(bytes('approve(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-        require(
-            success && (data.length == 0 || abi.decode(data, (bool))),
-            "SafeSwapTradeRouter::safeApprove: approve failed"
-        );
-    }
-}
-
-import {Test, console} from "forge-std/Test.sol";
 /**
  * @title SafeSwapTradeRouter
  * @dev Allows SFM Router-compliant trades to be paid via bsc

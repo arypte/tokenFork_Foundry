@@ -6,22 +6,41 @@ import { ISafeswapERC20 } from "./interfaces/SafeMoon/ISafeswapERC20.sol";
 
 // File contracts/SafeswapERC20.sol
 
+
+
 contract SafeswapERC20 is ISafeswapERC20 {
+
+    /*========================================================================================================================*/
+    /*======================================================= constants ======================================================*/
+    /*========================================================================================================================*/
 
     string public constant name = "Safeswap LPs";
     string public constant symbol = "SFS-LP";
     uint8 public constant decimals = 18;
+    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
+    /*========================================================================================================================*/
+    /*======================================================== states ========================================================*/
+    /*========================================================================================================================*/
 
     bytes32 private __avoid_collision_storage; // to avoid collisions storage
     
     uint256 public totalSupply;
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
 
     bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
+    /*========================================================================================================================*/
+    /*======================================================= mappings =======================================================*/
+    /*========================================================================================================================*/
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
     mapping(address => uint256) public nonces;
+
+    /*========================================================================================================================*/
+    /*====================================================== initialize ======================================================*/
+    /*========================================================================================================================*/
 
     function _SafeswapERC20_init_() internal {
         uint256 chainId = block.chainid;
@@ -36,36 +55,9 @@ contract SafeswapERC20 is ISafeswapERC20 {
         );
     }
 
-    function _mint(address to, uint256 value) internal {
-        totalSupply = totalSupply + value;
-        balanceOf[to] = balanceOf[to] + value;
-        emit Transfer(address(0), to, value);
-    }
-
-    function _burn(address from, uint256 value) internal {
-        balanceOf[from] = balanceOf[from] - value;
-        totalSupply = totalSupply - value;
-        emit Transfer(from, address(0), value);
-    }
-
-    function _approve(
-        address owner,
-        address spender,
-        uint256 value
-    ) private {
-        allowance[owner][spender] = value;
-        emit Approval(owner, spender, value);
-    }
-
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) private {
-        balanceOf[from] = balanceOf[from] - value;
-        balanceOf[to] = balanceOf[to] + value;
-        emit Transfer(from, to, value);
-    }
+    /*========================================================================================================================*/
+    /*================================================== external functions ==================================================*/
+    /*========================================================================================================================*/
 
     function approve(address spender, uint256 value) external returns (bool) {
         _approve(msg.sender, spender, value);
@@ -110,4 +102,45 @@ contract SafeswapERC20 is ISafeswapERC20 {
         require(recoveredAddress != address(0) && recoveredAddress == owner, "Safeswap: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
+
+    /*========================================================================================================================*/
+    /*================================================== internal functions ==================================================*/
+    /*========================================================================================================================*/
+
+    function _mint(address to, uint256 value) internal {
+        totalSupply = totalSupply + value;
+        balanceOf[to] = balanceOf[to] + value;
+        emit Transfer(address(0), to, value);
+    }
+
+    function _burn(address from, uint256 value) internal {
+        balanceOf[from] = balanceOf[from] - value;
+        totalSupply = totalSupply - value;
+        emit Transfer(from, address(0), value);
+    }
+
+
+    /*========================================================================================================================*/
+    /*=================================================== private functions ==================================================*/
+    /*========================================================================================================================*/
+
+        function _approve(
+        address owner,
+        address spender,
+        uint256 value
+    ) private {
+        allowance[owner][spender] = value;
+        emit Approval(owner, spender, value);
+    }
+
+    function _transfer(
+        address from,
+        address to,
+        uint256 value
+    ) private {
+        balanceOf[from] = balanceOf[from] - value;
+        balanceOf[to] = balanceOf[to] + value;
+        emit Transfer(from, to, value);
+    }
+
 }

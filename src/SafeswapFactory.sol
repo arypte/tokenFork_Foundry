@@ -29,28 +29,51 @@ import {UpgradeableProxy} from "./lib/openzeppelin/UpgradeableProxy.sol";
 import {OptimizedTransparentUpgradeableProxy} from "./OptimizedTransparentUpgradeableProxy.sol";
 import {SafeswapPair} from "./SafeswapPair.sol";
 
+
+
 contract SafeswapFactory is ISafeswapFactory, Initializable {
+    /*========================================================================================================================*/
+    /*======================================================= constants ======================================================*/
+    /*========================================================================================================================*/
+
     bytes32 public constant INIT_CODE_PAIR_HASH =
         keccak256(abi.encodePacked(type(OptimizedTransparentUpgradeableProxy).creationCode));
+
+    
+    /*========================================================================================================================*/
+    /*======================================================== states ========================================================*/
+    /*========================================================================================================================*/
 
     address public feeTo;
     address public feeToSetter;
     address public router;
     address public admin;
 
-    mapping(address => bool) public isBlacklistedStatus;
-    mapping(address => bool) public approvePartnerStatus;
-    mapping(address => bool) public isBlacklistedToken;
-
-    mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
 
     address public implementation;
+
+    /*========================================================================================================================*/
+    /*======================================================= mappings =======================================================*/
+    /*========================================================================================================================*/
+
+    mapping(address => bool) public isBlacklistedStatus;
+    mapping(address => bool) public approvePartnerStatus;
+    mapping(address => bool) public isBlacklistedToken;
+    mapping(address => mapping(address => address)) public getPair;
+
+    /*========================================================================================================================*/
+    /*====================================================== modifiers =======================================================*/
+    /*========================================================================================================================*/
 
     modifier onlyOwner() {
         require(admin == msg.sender, "Ownable: caller is not the owner");
         _;
     }
+
+    /*========================================================================================================================*/
+    /*====================================================== initialize ======================================================*/
+    /*========================================================================================================================*/
 
     function initialize(address _feeToSetter, address _feeTo) external initializer {
         feeToSetter = _feeToSetter;
@@ -58,19 +81,19 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
         admin = msg.sender;
     }
 
-    function setImplementation(address _impl) external onlyOwner {
-        require(_impl != address(0), "Not allow zero address");
-        implementation = _impl;
+    /*========================================================================================================================*/
+    /*=================================================== public functions ===================================================*/
+    /*========================================================================================================================*/
+
+    function setRouter(address _router) public {
+        require(msg.sender == admin, "NOT AUTHORIZED");
+        router = _router;
     }
 
-    function deployImplementation() external onlyOwner {
-        implementation = address(new SafeswapPair());
-    }
-
-    function allPairsLength() external view returns (uint256) {
-        return allPairs.length;
-    }
-
+    /*========================================================================================================================*/
+    /*================================================== external functions ==================================================*/
+    /*========================================================================================================================*/
+    
     function createPair(
         address tokenA,
         address tokenB,
@@ -101,11 +124,6 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
-    function setRouter(address _router) public {
-        require(msg.sender == admin, "NOT AUTHORIZED");
-        router = _router;
-    }
-
     function setFeeTo(address _feeTo) external {
         require(msg.sender == feeToSetter, "Safeswap: FORBIDDEN");
         feeTo = _feeTo;
@@ -114,6 +132,27 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
     function setFeeToSetter(address _feeToSetter) external {
         require(msg.sender == feeToSetter, "Safeswap: FORBIDDEN");
         feeToSetter = _feeToSetter;
+    }
+
+    /*========================================================================================================================*/
+    /*================================================ external view functions ===============================================*/
+    /*========================================================================================================================*/
+
+    function allPairsLength() external view returns (uint256) {
+        return allPairs.length;
+    }
+
+    /*========================================================================================================================*/
+    /*====================================================== Only Owner ======================================================*/
+    /*========================================================================================================================*/
+
+    function setImplementation(address _impl) external onlyOwner {
+        require(_impl != address(0), "Not allow zero address");
+        implementation = _impl;
+    }
+
+    function deployImplementation() external onlyOwner {
+        implementation = address(new SafeswapPair());
     }
 
     function blacklistAddress(address account) external onlyOwner {
@@ -145,4 +184,5 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
         require((approvePartnerStatus[account] == true), "Not approved yet");
         approvePartnerStatus[account] = false;
     }
+
 }
