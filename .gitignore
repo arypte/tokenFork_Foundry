@@ -12,3 +12,7 @@ docs/
 
 # Dotenv file
 .env
+
+# etc
+.DS_Store
+.clone.meta
