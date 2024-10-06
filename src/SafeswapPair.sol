@@ -24,8 +24,16 @@ import {ISafeswapCallee} from "./interfaces/SafeMoon/ISafeswapCallee.sol";
 contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     using UQ112x112 for uint224;
 
+    /*========================================================================================================================*/
+    /*======================================================= constants ======================================================*/
+    /*========================================================================================================================*/
+
     uint256 public constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+
+    /*========================================================================================================================*/
+    /*======================================================== states ========================================================*/
+    /*========================================================================================================================*/
 
     address public factory;
     address public token0;
@@ -41,6 +49,24 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint256 private unlocked = 1;
+
+    /*========================================================================================================================*/
+    /*======================================================== events ========================================================*/
+    /*========================================================================================================================*/
+
+    event Swap(
+        address indexed sender,
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address indexed to
+    );
+
+    /*========================================================================================================================*/
+    /*====================================================== modifiers =======================================================*/
+    /*========================================================================================================================*/
+
     modifier lock() {
         require(unlocked == 1, "Safeswap: LOCKED");
         unlocked = 0;
@@ -53,45 +79,10 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
         _;
     }
 
-    function getReserves()
-        public
-        view
-        returns (
-            uint112 _reserve0,
-            uint112 _reserve1,
-            uint32 _blockTimestampLast
-        )
-    {
-        _reserve0 = reserve0;
-        _reserve1 = reserve1;
-        _blockTimestampLast = blockTimestampLast;
-    }
 
-    function _safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "Safeswap: TRANSFER_FAILED");
-    }
-
-    function _transferSTPtaxFees(address token, uint256 amount) internal {
-        address router = ISafeswapFactory(factory).router();
-        (uint256 deduction, address to) = ISafeswapRouter(router).getTokenDeduction(token, amount);
-        if (deduction > 0 && to != address(0)) {
-            _safeTransfer(token, to, deduction);
-        }
-    }
-
-    event Swap(
-        address indexed sender,
-        uint256 amount0In,
-        uint256 amount1In,
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address indexed to
-    );
+    /*========================================================================================================================*/
+    /*====================================================== initialize ======================================================*/
+    /*========================================================================================================================*/
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external initializer {
@@ -102,83 +93,10 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
         unlocked = 1;
     }
 
-    // update reserves and, on the first call per block, price accumulators
-    function _update(
-        uint256 balance0,
-        uint256 balance1,
-        uint112 _reserve0,
-        uint112 _reserve1
-    ) private {
-        require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, "Safeswap: OVERFLOW");
-        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
-            // * never overflows, and + overflow is desired
-            price0CumulativeLast += uint256(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
-            price1CumulativeLast += uint256(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
-        }
-        reserve0 = uint112(balance0);
-        reserve1 = uint112(balance1);
-        blockTimestampLast = blockTimestamp;
-        emit Sync(reserve0, reserve1);
-    }
+    /*========================================================================================================================*/
+    /*================================================== external functions ==================================================*/
+    /*========================================================================================================================*/
 
-    function _takeFee(
-        address token,
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) private returns (uint256 _fee) {
-        require(token == token0 || token == token1, "Safeswap: INVALID_TOKEN");
-        address feeTo = ISafeswapFactory(factory).feeTo();
-        uint256 _totalSupply = totalSupply;
-
-        bool feeOn = feeTo != address(0);
-        uint256 amountOutWithoutFee = (amountOut * 10000) / 9975;
-        //uint FeeSTP = amountOutWithoutFee.mul(100) / 10000;
-        uint256 burnFee = (amountOutWithoutFee * 3) / 10000;
-        uint256 supportFee = (amountOutWithoutFee * 5) / 10000;
-
-        uint256 numerator = reserveIn * burnFee;
-        uint256 denominator = reserveOut - burnFee;
-        uint256 amountIn = numerator / denominator;
-
-        uint256 liquidity = Math.min((amountIn * _totalSupply) / reserveIn, (burnFee * _totalSupply) / reserveOut);
-        _mint(0x000000000000000000000000000000000000dEaD, liquidity);
-        _fee = burnFee;
-
-        if (feeOn) {
-            numerator = reserveIn * supportFee;
-            denominator = reserveOut - supportFee;
-            amountIn = numerator / denominator;
-
-            liquidity = Math.min((amountIn * _totalSupply) / reserveIn, (supportFee * _totalSupply) / reserveOut);
-            _mint(feeTo, liquidity);
-            _fee = _fee + supportFee;
-            //_safeTransfer(token0, 0x6B6003F0F3E7C9F096813b5c4F0F6DA9FD8D24Ba, FeeSTP);
-        }
-    }
-
-    // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-    function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
-        address feeTo = ISafeswapFactory(factory).feeTo();
-        feeOn = feeTo != address(0);
-        uint256 _kLast = kLast; // gas savings
-        if (feeOn) {
-            if (_kLast != 0) {
-                uint256 rootK = Math.sqrt(uint256(_reserve0) * _reserve1);
-                uint256 rootKLast = Math.sqrt(_kLast);
-                if (rootK > rootKLast) {
-                    uint256 numerator = totalSupply * (rootK - rootKLast);
-                    uint256 denominator = rootK * 3 + rootKLast;
-                    uint256 liquidity = numerator / denominator;
-                    if (liquidity > 0) _mint(feeTo, liquidity);
-                }
-            }
-        } else if (_kLast != 0) {
-            kLast = 0;
-        }
-    }
 
     // this low-level function should be called from a contract which performs important safety checks
     function mint(address to) external lock returns (uint256 liquidity) {
@@ -293,4 +211,126 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     function sync() external lock {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
+
+    /*========================================================================================================================*/
+    /*================================================== internal functions ==================================================*/
+    /*========================================================================================================================*/
+
+    function _transferSTPtaxFees(address token, uint256 amount) internal {
+        address router = ISafeswapFactory(factory).router();
+        (uint256 deduction, address to) = ISafeswapRouter(router).getTokenDeduction(token, amount);
+        if (deduction > 0 && to != address(0)) {
+            _safeTransfer(token, to, deduction);
+        }
+    }
+
+    /*========================================================================================================================*/
+    /*=================================================== private functions ==================================================*/
+    /*========================================================================================================================*/
+
+    function _safeTransfer(
+        address token,
+        address to,
+        uint256 value
+    ) private {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "Safeswap: TRANSFER_FAILED");
+    }
+
+        // update reserves and, on the first call per block, price accumulators
+    function _update(
+        uint256 balance0,
+        uint256 balance1,
+        uint112 _reserve0,
+        uint112 _reserve1
+    ) private {
+        require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, "Safeswap: OVERFLOW");
+        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
+            // * never overflows, and + overflow is desired
+            price0CumulativeLast += uint256(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
+            price1CumulativeLast += uint256(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+        }
+        reserve0 = uint112(balance0);
+        reserve1 = uint112(balance1);
+        blockTimestampLast = blockTimestamp;
+        emit Sync(reserve0, reserve1);
+    }
+
+    function _takeFee(
+        address token,
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) private returns (uint256 _fee) {
+        require(token == token0 || token == token1, "Safeswap: INVALID_TOKEN");
+        address feeTo = ISafeswapFactory(factory).feeTo();
+        uint256 _totalSupply = totalSupply;
+
+        bool feeOn = feeTo != address(0);
+        uint256 amountOutWithoutFee = (amountOut * 10000) / 9975;
+        //uint FeeSTP = amountOutWithoutFee.mul(100) / 10000;
+        uint256 burnFee = (amountOutWithoutFee * 3) / 10000;
+        uint256 supportFee = (amountOutWithoutFee * 5) / 10000;
+
+        uint256 numerator = reserveIn * burnFee;
+        uint256 denominator = reserveOut - burnFee;
+        uint256 amountIn = numerator / denominator;
+
+        uint256 liquidity = Math.min((amountIn * _totalSupply) / reserveIn, (burnFee * _totalSupply) / reserveOut);
+        _mint(0x000000000000000000000000000000000000dEaD, liquidity);
+        _fee = burnFee;
+
+        if (feeOn) {
+            numerator = reserveIn * supportFee;
+            denominator = reserveOut - supportFee;
+            amountIn = numerator / denominator;
+
+            liquidity = Math.min((amountIn * _totalSupply) / reserveIn, (supportFee * _totalSupply) / reserveOut);
+            _mint(feeTo, liquidity);
+            _fee = _fee + supportFee;
+            //_safeTransfer(token0, 0x6B6003F0F3E7C9F096813b5c4F0F6DA9FD8D24Ba, FeeSTP);
+        }
+    }
+
+    // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+    function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
+        address feeTo = ISafeswapFactory(factory).feeTo();
+        feeOn = feeTo != address(0);
+        uint256 _kLast = kLast; // gas savings
+        if (feeOn) {
+            if (_kLast != 0) {
+                uint256 rootK = Math.sqrt(uint256(_reserve0) * _reserve1);
+                uint256 rootKLast = Math.sqrt(_kLast);
+                if (rootK > rootKLast) {
+                    uint256 numerator = totalSupply * (rootK - rootKLast);
+                    uint256 denominator = rootK * 3 + rootKLast;
+                    uint256 liquidity = numerator / denominator;
+                    if (liquidity > 0) _mint(feeTo, liquidity);
+                }
+            }
+        } else if (_kLast != 0) {
+            kLast = 0;
+        }
+    }
+
+    /*========================================================================================================================*/
+    /*================================================= public view functions ================================================*/
+    /*========================================================================================================================*/
+
+        function getReserves()
+        public
+        view
+        returns (
+            uint112 _reserve0,
+            uint112 _reserve1,
+            uint32 _blockTimestampLast
+        )
+    {
+        _reserve0 = reserve0;
+        _reserve1 = reserve1;
+        _blockTimestampLast = blockTimestampLast;
+    }
+
 }
