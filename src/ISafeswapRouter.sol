@@ -1,3 +1,6 @@
+//SPDX-License-Identifier: MIT
+pragma solidity 0.8.11;
+
 import {ISafeswapRouter01} from "./ISafeswapRouter01.sol";
 
 interface ISafeSwapRouter is ISafeswapRouter01 {
