@@ -8,7 +8,7 @@ import { IUniswapV2Factory } from "./interfaces/IUniswapV2Factory.sol";
 import { Initializable } from "./lib/openzeppelin/Initializable.sol";
 import { ContextUpgradeable } from "./lib/openzeppelin/ContextUpgradeable.sol";
 import { OwnableUpgradeable } from "./lib/openzeppelin/OwnableUpgradeable.sol";
-import { AddressUpgradeable } from "./lib/openzeppelin/AddressUpgradeable.sol";
+import { AddressUpgradeable } from "./library/AddressUpgradeable.sol";
 import { SafeMathUpgradeable } from "./lib/SafeMathUpgradeable.sol";
 
 
