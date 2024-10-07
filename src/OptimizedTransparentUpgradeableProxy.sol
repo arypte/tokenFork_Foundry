@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { UpgradeableProxy } from "./lib/openzeppelin/UpgradeableProxy.sol";
-import { Initializable } from "./lib/openzeppelin/Initializable.sol";
+import {UpgradeableProxy} from "./lib/openzeppelin/UpgradeableProxy.sol";
+import {Initializable} from "./lib/openzeppelin/Initializable.sol";
 
 /**
  * @dev This contract implements a proxy that is upgradeable by an admin.
@@ -30,11 +30,10 @@ contract OptimizedTransparentUpgradeableProxy is UpgradeableProxy, Initializable
      * @dev Initializes an upgradeable proxy managed by `_admin`, backed by the implementation at `_logic`, and
      * optionally initialized with `_data` as explained in {UpgradeableProxy-constructor}.
      */
-    function _OptimizedTransparentUpgradeableProxy_init_(
-        address factory,
-        address initialAdmin,
-        bytes memory _data
-    ) external initializer {
+    function _OptimizedTransparentUpgradeableProxy_init_(address factory, address initialAdmin, bytes memory _data)
+        external
+        initializer
+    {
         _UpgradeableProxy_init_(factory, _data);
 
         assert(_ADMIN_SLOT == bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
@@ -111,7 +110,7 @@ contract OptimizedTransparentUpgradeableProxy is UpgradeableProxy, Initializable
         _upgradeTo(newFactory);
         address newImplementation = _implementation();
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = newImplementation.delegatecall(data);
+        (bool success,) = newImplementation.delegatecall(data);
         require(success);
     }
 

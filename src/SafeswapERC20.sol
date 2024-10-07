@@ -2,14 +2,11 @@
 
 pragma solidity 0.8.11;
 
-import { ISafeswapERC20 } from "./interfaces/SafeMoon/ISafeswapERC20.sol";
+import {ISafeswapERC20} from "./interfaces/SafeMoon/ISafeswapERC20.sol";
 
 // File contracts/SafeswapERC20.sol
 
-
-
 contract SafeswapERC20 is ISafeswapERC20 {
-
     /*========================================================================================================================*/
     /*======================================================= constants ======================================================*/
     /*========================================================================================================================*/
@@ -24,7 +21,7 @@ contract SafeswapERC20 is ISafeswapERC20 {
     /*========================================================================================================================*/
 
     bytes32 private __avoid_collision_storage; // to avoid collisions storage
-    
+
     uint256 public totalSupply;
 
     bytes32 public DOMAIN_SEPARATOR;
@@ -69,11 +66,7 @@ contract SafeswapERC20 is ISafeswapERC20 {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
         if (allowance[from][msg.sender] != type(uint256).max) {
             allowance[from][msg.sender] = allowance[from][msg.sender] - value;
         }
@@ -81,15 +74,9 @@ contract SafeswapERC20 is ISafeswapERC20 {
         return true;
     }
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         require(deadline >= block.timestamp, "Safeswap: EXPIRED");
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -119,28 +106,18 @@ contract SafeswapERC20 is ISafeswapERC20 {
         emit Transfer(from, address(0), value);
     }
 
-
     /*========================================================================================================================*/
     /*=================================================== private functions ==================================================*/
     /*========================================================================================================================*/
 
-        function _approve(
-        address owner,
-        address spender,
-        uint256 value
-    ) private {
+    function _approve(address owner, address spender, uint256 value) private {
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) private {
+    function _transfer(address from, address to, uint256 value) private {
         balanceOf[from] = balanceOf[from] - value;
         balanceOf[to] = balanceOf[to] + value;
         emit Transfer(from, to, value);
     }
-
 }

@@ -10,14 +10,13 @@
 // import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 // import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
 
-
 // contract SFT is Test {
 //     Safemoon public safeMoon;
 //     SafeswapFactory public safeswapFactory;
 //     SafeswapRouterProxy1 public safeswapRouterProxy1;
 //     SafeswapRouterProxy2 public safeswapRouterProxy2;
 //     SafeswapPair public safeswapPair;
-    
+
 //     SafeSwapTradeRouter public safeSwapTradeRouter;
 //     FeeJar public feeJar ;
 //     address public owner;
@@ -45,7 +44,7 @@
 //         safeswapFactory = new SafeswapFactory();
 //         safeswapFactory.initialize(owner, owner); // feeTo, feeToSetter
 //         safeswapFactory.setImplementation(address(safeswapPair));
-        
+
 //         safeswapRouterProxy1 = new SafeswapRouterProxy1();
 //         safeswapRouterProxy1.initialize(address(safeswapFactory), WETH); // _factory, _WETH
 //         safeswapFactory.setRouter(address(safeswapRouterProxy1));
@@ -108,9 +107,9 @@
 //         console.log("Before LP Account A:", accountA);
 //         console.log("Abal : " , address(accountA).balance, safeMoon.balanceOf(accountA));
 //         console.log(v2pair.balanceOf(accountA));
-//         vm.prank(accountA);        
+//         vm.prank(accountA);
 //         safeMoon.approve(address(safeswapRouterProxy1), 100 * 10 ** 9);
-//         vm.prank(accountA);        
+//         vm.prank(accountA);
 //         safeswapRouterProxy1.addLiquidityETH{value: 100 ether}(address(safeMoon), 100 * 10 ** 9,0,0,accountA,0);
 //         console.log("After LP Account A:", accountA);
 //         console.log("Abal : " , address(accountA).balance, safeMoon.balanceOf(accountA));
@@ -130,7 +129,7 @@
 //         SafeSwapTradeRouter.Trade memory temp;
 //         temp.amountIn = 50 * 10 ** 9;
 //         temp.amountOut = 1 * 10 ** 18;
-        
+
 //         address[] memory temp2 = new address[](2);
 //         temp2[0] = address(safeMoon);
 //         temp2[1] = WETH;
@@ -143,7 +142,7 @@
 //         safeMoon.approve(address(safeSwapTradeRouter), 100 * 10 ** 9);
 //         vm.prank(accountB);
 //         safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount(temp);
-        
+
 //     }
 
 // }

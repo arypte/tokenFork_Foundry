@@ -1,6 +1,6 @@
 /**
- *Submitted for verification at BscScan.com on 2022-12-23
-*/
+ * Submitted for verification at BscScan.com on 2022-12-23
+ */
 
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
@@ -13,7 +13,6 @@ import {ISafeswapFactory} from "./interfaces/SafeMoon/ISafeswapFactory.sol";
  * @dev Allows split SFM SwapRouter Fee
  */
 contract FeeJar is AccessControlUpgradeable {
-
     /*========================================================================================================================*/
     /*======================================================= constants ======================================================*/
     /*========================================================================================================================*/
@@ -60,15 +59,22 @@ contract FeeJar is AccessControlUpgradeable {
     event WithdrawBNB(address to, uint256 amount);
 
     /// @notice Fee event
-    event Fee(
-        address indexed feePayer, // tx.origin
-        uint256 feeAmount, // msg.value
-        uint256 buyBackAndBurnFeeAmount, // buyBackAndBurnFeeAmount
-        uint256 lpFeeAmount, // lpFeeAmount
-        uint256 supportFeeAmount, // supportFeeAmount
-        address buyBackAndBurnFeeCollector, // buyBackAndBurnFeeCollector
-        address supportFeeCollector, // supportFeeCollector
-        address lpFeeCollector // lpFeeCollector
+    event Fee( // tx.origin
+        // msg.value
+        // buyBackAndBurnFeeAmount
+        // lpFeeAmount
+        // supportFeeAmount
+        // buyBackAndBurnFeeCollector
+        // supportFeeCollector
+        // lpFeeCollector
+        address indexed feePayer,
+        uint256 feeAmount,
+        uint256 buyBackAndBurnFeeAmount,
+        uint256 lpFeeAmount,
+        uint256 supportFeeAmount,
+        address buyBackAndBurnFeeCollector,
+        address supportFeeCollector,
+        address lpFeeCollector
     );
 
     /*========================================================================================================================*/
@@ -109,11 +115,8 @@ contract FeeJar is AccessControlUpgradeable {
     ) external initializer {
         // addresses validation!
         require(
-            _buyBackAndBurnFeeCollector != address(0) &&
-                _lpFeeCollector != address(0) &&
-                _feeJarAdmin != address(0) &&
-                _feeSetter != address(0) &&
-                _factory != address(0),
+            _buyBackAndBurnFeeCollector != address(0) && _lpFeeCollector != address(0) && _feeJarAdmin != address(0)
+                && _feeSetter != address(0) && _factory != address(0),
             "FEEJAR: PLEASE ENTER VALID ADDRESSES"
         );
 
@@ -154,24 +157,16 @@ contract FeeJar is AccessControlUpgradeable {
     /**
      * @notice Distributes any ETH in contract to relevant parties
      */
-    function fee()
-        public
-        payable
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function fee() public payable returns (uint256, uint256, uint256) {
         uint256 feeBalance = msg.value;
         if (feeBalance == 0) {
-            return (0,0,0);
+            return (0, 0, 0);
         }
         (uint256 buyBackAndBurnFeeAmount, uint256 supportFeeAmount, uint256 lpFeeAmount) = getFeeAmount(feeBalance);
         address supportFeeCollector;
 
         if (buyBackAndBurnFee > 0) {
-            (bool buyBackAndBurnFeeSuccess, ) = buyBackAndBurnFeeCollector.call{ value: buyBackAndBurnFeeAmount }("");
+            (bool buyBackAndBurnFeeSuccess,) = buyBackAndBurnFeeCollector.call{value: buyBackAndBurnFeeAmount}("");
             require(buyBackAndBurnFeeSuccess, "Swap Fee: Could not collect network fee");
         }
 
@@ -179,14 +174,14 @@ contract FeeJar is AccessControlUpgradeable {
             supportFeeCollector = ISafeswapFactory(factory).feeTo();
             bool feeOn = supportFeeCollector != address(0);
             if (feeOn) {
-                (bool supportFeeSuccess, ) = supportFeeCollector.call{ value: supportFeeAmount }("");
+                (bool supportFeeSuccess,) = supportFeeCollector.call{value: supportFeeAmount}("");
                 require(supportFeeSuccess, "Swap Fee: Could not collect support fee");
             }
         }
 
         if (address(this).balance > 0) {
             uint256 lpAmount = address(this).balance;
-            (bool success, ) = lpFeeCollector.call{ value: lpAmount }("");
+            (bool success,) = lpFeeCollector.call{value: lpAmount}("");
             require(success, "Swap Fee: Could not collect LP ETH");
         }
 
@@ -239,8 +234,6 @@ contract FeeJar is AccessControlUpgradeable {
         supportFee = newFee;
     }
 
-
-
     /*========================================================================================================================*/
     /*================================================= public view functions ================================================*/
     /*========================================================================================================================*/
@@ -252,11 +245,7 @@ contract FeeJar is AccessControlUpgradeable {
     function getFeeAmount(uint256 totalFee)
         public
         view
-        returns (
-            uint256 buyBackAndBurnFeeAmount,
-            uint256 supportFeeAmount,
-            uint256 lpFeeAmount
-        )
+        returns (uint256 buyBackAndBurnFeeAmount, uint256 supportFeeAmount, uint256 lpFeeAmount)
     {
         if (buyBackAndBurnFee > 0) {
             buyBackAndBurnFeeAmount = (totalFee * buyBackAndBurnFee) / maxPercentage;

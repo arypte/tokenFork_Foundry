@@ -1,6 +1,6 @@
 /**
- *Submitted for verification at BscScan.com on 2023-01-20
-*/
+ * Submitted for verification at BscScan.com on 2023-01-20
+ */
 
 // SPDX-License-Identifier: MIT
 
@@ -18,7 +18,6 @@ import {SafeswapLibrary} from "../library/SafeSwapLibrary.sol";
 import {TransferHelper} from "../library/TransferHelper.sol";
 
 contract SafeswapRouterProxy2 is Initializable {
-
     /*========================================================================================================================*/
     /*======================================================== states ========================================================*/
     /*========================================================================================================================*/
@@ -114,7 +113,9 @@ contract SafeswapRouterProxy2 is Initializable {
             TransferHelper.safeTransferFrom(path[0], msg.sender, nameToInfo[path[0]].feesAddress, deduction);
         }
 
-        TransferHelper.safeTransferFrom(path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amountIn);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amountIn
+        );
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
@@ -173,7 +174,7 @@ contract SafeswapRouterProxy2 is Initializable {
         _swap(amounts, path, to);
     }
 
-        function swapExactTokensForTokens(
+    function swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,
         address[] calldata path,
@@ -197,7 +198,9 @@ contract SafeswapRouterProxy2 is Initializable {
             amounts[amounts.length - 1] = amountOut;
         }
 
-        TransferHelper.safeTransferFrom(path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+        );
         _swap(amounts, path, to);
     }
 
@@ -252,7 +255,9 @@ contract SafeswapRouterProxy2 is Initializable {
         }
         amounts = SafeswapLibrary.getAmountsOut(factory, amounts[0], path);
 
-        TransferHelper.safeTransferFrom(path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+        );
         _swap(amounts, path, to);
     }
 
@@ -260,26 +265,18 @@ contract SafeswapRouterProxy2 is Initializable {
     /*================================================== internal functions ==================================================*/
     /*========================================================================================================================*/
 
-        // **** SWAP ****
+    // **** SWAP ****
     // requires the initial amount to have already been sent to the first pair
-    function _swap(
-        uint256[] memory amounts,
-        address[] memory path,
-        address _to
-    ) internal virtual {
+    function _swap(uint256[] memory amounts, address[] memory path, address _to) internal virtual {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            (address token0,) = SafeswapLibrary.sortTokens(input, output);
             uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) = input == token0
-                ? (uint256(0), amountOut)
-                : (amountOut, uint256(0));
+            (uint256 amount0Out, uint256 amount1Out) =
+                input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
             address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
             ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output)).swap(
-                amount0Out,
-                amount1Out,
-                to,
-                new bytes(0)
+                amount0Out, amount1Out, to, new bytes(0)
             );
         }
     }
@@ -291,16 +288,15 @@ contract SafeswapRouterProxy2 is Initializable {
     {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            (address token0,) = SafeswapLibrary.sortTokens(input, output);
             ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
             uint256 amountInput;
             uint256 amountOutput;
             {
                 // scope to avoid stack too deep errors
-                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) = input == token0
-                    ? (reserve0, reserve1)
-                    : (reserve1, reserve0);
+                (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) =
+                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
                 amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
@@ -318,7 +314,7 @@ contract SafeswapRouterProxy2 is Initializable {
     /*================================================= public view functions ================================================*/
     /*========================================================================================================================*/
 
-    function version() view public returns (uint256) {
+    function version() public view returns (uint256) {
         return 2;
     }
 
@@ -335,7 +331,6 @@ contract SafeswapRouterProxy2 is Initializable {
         uint256 deduction = (amount * nameToInfo[token].buyFeePercent) / ONE;
         return (deduction, nameToInfo[token].feesAddress);
     }
-
 
     /*========================================================================================================================*/
     /*================================================= private view functions ===============================================*/
@@ -380,7 +375,6 @@ contract SafeswapRouterProxy2 is Initializable {
         require(whitelistAccess[msg.sender], "SafeswapRouter: ONLY_WHITELIST");
     }
 
-
     /*========================================================================================================================*/
     /*======================================================= fallbacks ======================================================*/
     /*========================================================================================================================*/
@@ -423,7 +417,7 @@ contract SafeswapRouterProxy2 is Initializable {
         return killSwitch;
     }
 
-        function unregisterToken(address tokenAddress) external onlyOwner {
+    function unregisterToken(address tokenAddress) external onlyOwner {
         require(nameToInfo[tokenAddress].tokenAddress != address(0), "token does not exist");
         require(nameToInfo[tokenAddress].isDeleted == false, "token already deleted");
 

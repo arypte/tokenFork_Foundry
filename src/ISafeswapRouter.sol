@@ -28,5 +28,4 @@ interface ISafeSwapRouter is ISafeswapRouter01 {
         address to,
         uint256 deadline
     ) external;
-
 }

@@ -1,7 +1,6 @@
-
 /**
- *Submitted for verification at BscScan.com on 2022-12-23
-*/
+ * Submitted for verification at BscScan.com on 2022-12-23
+ */
 
 // Sources flattened with hardhat v2.10.1 https://hardhat.org
 
@@ -29,8 +28,6 @@ import {UpgradeableProxy} from "./lib/openzeppelin/UpgradeableProxy.sol";
 import {OptimizedTransparentUpgradeableProxy} from "./OptimizedTransparentUpgradeableProxy.sol";
 import {SafeswapPair} from "./SafeswapPair.sol";
 
-
-
 contract SafeswapFactory is ISafeswapFactory, Initializable {
     /*========================================================================================================================*/
     /*======================================================= constants ======================================================*/
@@ -39,7 +36,6 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
     bytes32 public constant INIT_CODE_PAIR_HASH =
         keccak256(abi.encodePacked(type(OptimizedTransparentUpgradeableProxy).creationCode));
 
-    
     /*========================================================================================================================*/
     /*======================================================== states ========================================================*/
     /*========================================================================================================================*/
@@ -93,12 +89,8 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
     /*========================================================================================================================*/
     /*================================================== external functions ==================================================*/
     /*========================================================================================================================*/
-    
-    function createPair(
-        address tokenA,
-        address tokenB,
-        address to
-    ) external returns (address pair) {
+
+    function createPair(address tokenA, address tokenB, address to) external returns (address pair) {
         require(implementation != address(0), "Please set implementation");
         require((isBlacklistedToken[tokenA] == false), "Cannot create with tokenA");
         require((isBlacklistedToken[tokenB] == false), "Cannot create with tokenB");
@@ -110,11 +102,9 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
         require(token0 != address(0), "Safeswap: ZERO_ADDRESS");
         require(getPair[token0][token1] == address(0), "Safeswap: PAIR_EXISTS"); // single check is sufficient
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
-        OptimizedTransparentUpgradeableProxy pairProxy = new OptimizedTransparentUpgradeableProxy{ salt: salt }();
+        OptimizedTransparentUpgradeableProxy pairProxy = new OptimizedTransparentUpgradeableProxy{salt: salt}();
         pairProxy._OptimizedTransparentUpgradeableProxy_init_(
-            address(this),
-            address(0x000000000000000000000000000000000000dEaD),
-            hex""
+            address(this), address(0x000000000000000000000000000000000000dEaD), hex""
         );
         pair = address(pairProxy);
         ISafeswapPair(pair).initialize(token0, token1);
@@ -184,5 +174,4 @@ contract SafeswapFactory is ISafeswapFactory, Initializable {
         require((approvePartnerStatus[account] == true), "Not approved yet");
         approvePartnerStatus[account] = false;
     }
-
 }

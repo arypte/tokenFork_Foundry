@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { Initializable } from "./Initializable.sol" ;
-import { ContextUpgradeable } from "./ContextUpgradeable.sol";
+import {Initializable} from "./Initializable.sol";
+import {ContextUpgradeable} from "./ContextUpgradeable.sol";
 
 abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
     address private _owner;

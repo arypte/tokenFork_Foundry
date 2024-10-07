@@ -1,6 +1,6 @@
 /**
- *Submitted for verification at BscScan.com on 2023-01-20
-*/
+ * Submitted for verification at BscScan.com on 2023-01-20
+ */
 
 // SPDX-License-Identifier: MIT
 
@@ -81,7 +81,6 @@ import {SafeswapLibrary} from "../library/SafeSwapLibrary.sol";
 import {TransferHelper} from "../library/TransferHelper.sol";
 
 contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
-
     /*========================================================================================================================*/
     /*======================================================== states ========================================================*/
     /*========================================================================================================================*/
@@ -184,16 +183,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    )
-    external
-    virtual
-    ensure(deadline)
-    returns (
-        uint256 amountA,
-        uint256 amountB,
-        uint256 liquidity
-    )
-    {
+    ) external virtual ensure(deadline) returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
         (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin, to);
         address pair = SafeswapLibrary.pairFor(factory, tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
@@ -208,36 +198,19 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         uint256 amountETHMin,
         address to,
         uint256 deadline
-    )
-    external
-    payable
-    virtual
-    ensure(deadline)
-    returns (
-        uint256 amountToken,
-        uint256 amountETH,
-        uint256 liquidity
-    )
-    {
-        (amountToken, amountETH) = _addLiquidity(
-            token,
-            WETH,
-            amountTokenDesired,
-            msg.value,
-            amountTokenMin,
-            amountETHMin,
-            to
-        );
+    ) external payable virtual ensure(deadline) returns (uint256 amountToken, uint256 amountETH, uint256 liquidity) {
+        (amountToken, amountETH) =
+            _addLiquidity(token, WETH, amountTokenDesired, msg.value, amountTokenMin, amountETHMin, to);
         address pair = SafeswapLibrary.pairFor(factory, token, WETH);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
-        IWETH(WETH).deposit{ value: amountETH }();
+        IWETH(WETH).deposit{value: amountETH}();
         assert(IWETH(WETH).transfer(pair, amountETH));
         liquidity = ISafeswapPair(pair).mint(to);
         // refund dust eth, if any
         if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
     }
 
-        function removeLiquidity(
+    function removeLiquidity(
         address tokenA,
         address tokenB,
         uint256 liquidity,
@@ -249,7 +222,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         address pair = SafeswapLibrary.pairFor(factory, tokenA, tokenB);
         ISafeswapPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         (uint256 amount0, uint256 amount1) = ISafeswapPair(pair).burn(to);
-        (address token0, ) = SafeswapLibrary.sortTokens(tokenA, tokenB);
+        (address token0,) = SafeswapLibrary.sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, "SafeswapRouter: INSUFFICIENT_A_AMOUNT");
         require(amountB >= amountBMin, "SafeswapRouter: INSUFFICIENT_B_AMOUNT");
@@ -263,15 +236,8 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         address to,
         uint256 deadline
     ) public virtual override ensure(deadline) returns (uint256 amountToken, uint256 amountETH) {
-        (amountToken, amountETH) = removeLiquidity(
-            token,
-            WETH,
-            liquidity,
-            amountTokenMin,
-            amountETHMin,
-            address(this),
-            deadline
-        );
+        (amountToken, amountETH) =
+            removeLiquidity(token, WETH, liquidity, amountTokenMin, amountETHMin, address(this), deadline);
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH);
         TransferHelper.safeTransfer(token, to, amountToken);
@@ -300,15 +266,18 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
     /*================================================== external functions ==================================================*/
     /*========================================================================================================================*/
 
-        // **** SWAP ****
+    // **** SWAP ****
     // requires the initial amount to have already been sent to the first pair
 
-    function swapExactETHForTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable virtual override ensure(deadline) onlyWhitelist returns (uint256[] memory amounts) {
+    function swapExactETHForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        virtual
+        override
+        ensure(deadline)
+        onlyWhitelist
+        returns (uint256[] memory amounts)
+    {
         require(path[0] == WETH, "SafeswapRouter: INVALID_PATH");
         amounts = SafeswapLibrary.getAmountsOut(factory, msg.value, path);
         require(amounts[amounts.length - 1] >= amountOutMin, "SafeswapRouter: INSUFFICIENT_OUTPUT_AMOUNT");
@@ -317,7 +286,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
             uint256 deduction = (amountOut * nameToInfo[path[1]].buyFeePercent) / ONE;
             amounts[amounts.length - 1] = amountOut - deduction;
         }
-        IWETH(WETH).deposit{ value: amounts[0] }();
+        IWETH(WETH).deposit{value: amounts[0]}();
         assert(IWETH(WETH).transfer(SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
     }
@@ -377,12 +346,15 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
 
-    function swapETHForExactTokens(
-        uint256 amountOut,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable virtual override ensure(deadline) onlyWhitelist returns (uint256[] memory amounts) {
+    function swapETHForExactTokens(uint256 amountOut, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        virtual
+        override
+        ensure(deadline)
+        onlyWhitelist
+        returns (uint256[] memory amounts)
+    {
         require(path[0] == WETH, "SafeswapRouter: INVALID_PATH");
         amounts = SafeswapLibrary.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= msg.value, "SafeswapRouter: EXCESSIVE_INPUT_AMOUNT");
@@ -392,13 +364,13 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         }
         amounts = SafeswapLibrary.getAmountsIn(factory, amountOut, path);
 
-        IWETH(WETH).deposit{ value: amounts[0] }();
+        IWETH(WETH).deposit{value: amounts[0]}();
         assert(IWETH(WETH).transfer(SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
         if (msg.value > amounts[0]) TransferHelper.safeTransferETH(to, msg.value - amounts[0]);
     }
 
-        function removeLiquidityWithPermit(
+    function removeLiquidityWithPermit(
         address tokenA,
         address tokenB,
         uint256 liquidity,
@@ -433,12 +405,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         uint256 value = approveMax ? type(uint256).max : liquidity;
         ISafeswapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
-            token,
-            liquidity,
-            amountTokenMin,
-            amountETHMin,
-            to,
-            deadline
+            token, liquidity, amountTokenMin, amountETHMin, to, deadline
         );
     }
 
@@ -450,7 +417,7 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
     ) external payable virtual override ensure(deadline) onlyWhitelist {
         require(path[0] == WETH, "SafeswapRouter: INVALID_PATH");
         uint256 amountIn = msg.value;
-        IWETH(WETH).deposit{ value: amountIn }();
+        IWETH(WETH).deposit{value: amountIn}();
         assert(IWETH(WETH).transfer(SafeswapLibrary.pairFor(factory, path[0], path[1]), amountIn));
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
@@ -485,7 +452,6 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         TransferHelper.safeTransferETH(to, amountOut);
     }
 
-    
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -501,7 +467,9 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
             TransferHelper.safeTransferFrom(path[0], msg.sender, nameToInfo[path[0]].feesAddress, deduction);
         }
 
-        TransferHelper.safeTransferFrom(path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amountIn);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amountIn
+        );
         (uint256 amount0Out, uint256 amount1Out) = _swapSupportingFeeOnTransferTokensForV1(path, address(this));
         uint256 amountOut = amount0Out > 0 ? amount0Out : amount1Out;
 
@@ -527,7 +495,9 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
             TransferHelper.safeTransferFrom(path[0], msg.sender, nameToInfo[path[0]].feesAddress, deduction);
         }
         amounts = SafeswapLibrary.getAmountsOut(factory, amounts[0], path);
-        TransferHelper.safeTransferFrom(path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, SafeswapLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+        );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
@@ -615,25 +585,16 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         }
     }
 
-
-    function _swap(
-        uint256[] memory amounts,
-        address[] memory path,
-        address _to
-    ) internal virtual {
+    function _swap(uint256[] memory amounts, address[] memory path, address _to) internal virtual {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            (address token0,) = SafeswapLibrary.sortTokens(input, output);
             uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) = input == token0
-                ? (uint256(0), amountOut)
-                : (amountOut, uint256(0));
+            (uint256 amount0Out, uint256 amount1Out) =
+                input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
             address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
             ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output)).swap(
-                amount0Out,
-                amount1Out,
-                to,
-                new bytes(0)
+                amount0Out, amount1Out, to, new bytes(0)
             );
         }
     }
@@ -645,16 +606,15 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
     {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            (address token0,) = SafeswapLibrary.sortTokens(input, output);
             ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
             uint256 amountInput;
             uint256 amountOutput;
             {
                 // scope to avoid stack too deep errors
-                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) = input == token0
-                    ? (reserve0, reserve1)
-                    : (reserve1, reserve0);
+                (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) =
+                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
                 amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
@@ -670,46 +630,41 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
 
     function _delegate(address _impl) internal virtual {
         assembly {
-        // Copy msg.data. We take full control of memory in this inline assembly
-        // block because it will not return to Solidity code. We overwrite the
-        // Solidity scratch pad at memory position 0.
+            // Copy msg.data. We take full control of memory in this inline assembly
+            // block because it will not return to Solidity code. We overwrite the
+            // Solidity scratch pad at memory position 0.
             calldatacopy(0, 0, calldatasize())
 
-        // Call the implementation.
-        // out and outsize are 0 because we don't know the size yet.
+            // Call the implementation.
+            // out and outsize are 0 because we don't know the size yet.
             let result := delegatecall(gas(), _impl, 0, calldatasize(), 0, 0)
 
-        // Copy the returned data.
+            // Copy the returned data.
             returndatacopy(0, 0, returndatasize())
 
             switch result
             // delegatecall returns 0 on error.
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return(0, returndatasize())
-            }
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
         }
     }
 
     function _swapSupportingFeeOnTransferTokensForV1(address[] memory path, address _to)
-    internal
-    virtual
-    returns (uint256 amount0Out, uint256 amount1Out)
+        internal
+        virtual
+        returns (uint256 amount0Out, uint256 amount1Out)
     {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = SafeswapLibrary.sortTokens(input, output);
+            (address token0,) = SafeswapLibrary.sortTokens(input, output);
             ISafeswapPair pair = ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output));
             uint256 amountInput;
             uint256 amountOutput;
             {
                 // scope to avoid stack too deep errors
-                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) = input == token0
-                ? (reserve0, reserve1)
-                : (reserve1, reserve0);
+                (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) =
+                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
                 amountOutput = SafeswapLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
@@ -766,28 +721,33 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
     /*========================================================================================================================*/
 
     // **** LIBRARY FUNCTIONS ****
-    function quote(
-        uint256 amountA,
-        uint256 reserveA,
-        uint256 reserveB
-    ) public pure virtual override returns (uint256 amountB) {
+    function quote(uint256 amountA, uint256 reserveA, uint256 reserveB)
+        public
+        pure
+        virtual
+        override
+        returns (uint256 amountB)
+    {
         return SafeswapLibrary.quote(amountA, reserveA, reserveB);
     }
 
-    function getAmountIn(
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) public pure virtual override returns (uint256 amountIn) {
+    function getAmountIn(uint256 amountOut, uint256 reserveIn, uint256 reserveOut)
+        public
+        pure
+        virtual
+        override
+        returns (uint256 amountIn)
+    {
         return SafeswapLibrary.getAmountIn(amountOut, reserveIn, reserveOut);
     }
 
-
-    function getAmountOut(
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) public pure virtual override returns (uint256 amountOut) {
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut)
+        public
+        pure
+        virtual
+        override
+        returns (uint256 amountOut)
+    {
         return SafeswapLibrary.getAmountOut(amountIn, reserveIn, reserveOut);
     }
 
@@ -815,17 +775,15 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
     /*====================================================== Only Owner ======================================================*/
     /*========================================================================================================================*/
 
-    function setRouterTrade(address _routerTrade) override public onlyOwner {
+    function setRouterTrade(address _routerTrade) public override onlyOwner {
         routerTrade = _routerTrade;
     }
 
-    function setWhitelist(address _user, bool _status) override external onlyOwner {
+    function setWhitelist(address _user, bool _status) external override onlyOwner {
         whitelistAccess[_user] = _status;
     }
 
     function setImpls(uint256 _implIndex, address _impl) public override onlyOwner {
         impls[_implIndex] = _impl;
     }
-
-
 }

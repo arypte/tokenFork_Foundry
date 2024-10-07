@@ -29,7 +29,7 @@ contract UpgradeableProxy is Proxy {
         if (_data.length > 0) {
             // solhint-disable-next-line avoid-low-level-calls
             address impl = ISafeswapFactory(_factory).implementation();
-            (bool success, ) = impl.delegatecall(_data);
+            (bool success,) = impl.delegatecall(_data);
             require(success);
         }
     }

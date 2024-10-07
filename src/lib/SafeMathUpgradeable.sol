@@ -17,13 +17,13 @@ library SafeMathUpgradeable {
      * @dev Returns the substraction of two unsigned integers, with an overflow flag.
      *
      * _Available since v3.4._
-     
-    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        if (b > a) return (false, 0);
-        return (true, a - b);
-    }
-
-    /**
+     *
+     * function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+     *     if (b > a) return (false, 0);
+     *     return (true, a - b);
+     * }
+     *
+     * /**
      * @dev Returns the multiplication of two unsigned integers, with an overflow flag.
      *
      * _Available since v3.4._
@@ -153,11 +153,7 @@ library SafeMathUpgradeable {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         return a - b;
     }
@@ -177,11 +173,7 @@ library SafeMathUpgradeable {
      *
      * - The divisor cannot be zero.
      */
-    function div(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         return a / b;
     }
@@ -201,11 +193,7 @@ library SafeMathUpgradeable {
      *
      * - The divisor cannot be zero.
      */
-    function mod(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         return a % b;
     }

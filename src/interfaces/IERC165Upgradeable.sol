@@ -5,7 +5,6 @@ pragma solidity 0.8.11;
 
 // OpenZeppelin Contracts v4.4.1 (utils/introspection/IERC165.sol)
 
-
 /**
  * @dev Interface of the ERC165 standard, as defined in the
  * https://eips.ethereum.org/EIPS/eip-165[EIP].

@@ -28,7 +28,7 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     /*======================================================= constants ======================================================*/
     /*========================================================================================================================*/
 
-    uint256 public constant MINIMUM_LIQUIDITY = 10**3;
+    uint256 public constant MINIMUM_LIQUIDITY = 10 ** 3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
 
     /*========================================================================================================================*/
@@ -79,7 +79,6 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
         _;
     }
 
-
     /*========================================================================================================================*/
     /*====================================================== initialize ======================================================*/
     /*========================================================================================================================*/
@@ -97,11 +96,10 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     /*================================================== external functions ==================================================*/
     /*========================================================================================================================*/
 
-
     // this low-level function should be called from a contract which performs important safety checks
     function mint(address to) external lock returns (uint256 liquidity) {
         require(ISafeswapFactory(factory).isBlacklistedStatus(to) == false, "Address is blacklisted");
-        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
         uint256 amount0 = balance0 - _reserve0;
@@ -125,7 +123,7 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     // this low-level function should be called from a contract which performs important safety checks
     function burn(address to) external lock returns (uint256 amount0, uint256 amount1) {
         require(ISafeswapFactory(factory).isBlacklistedStatus(to) == false, "Address is blacklisted");
-        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0; // gas savings
         address _token1 = token1; // gas savings
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
@@ -149,15 +147,10 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external lock onlyRouter {
+    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external lock onlyRouter {
         require(ISafeswapFactory(factory).isBlacklistedStatus(to) == false, "Address is blacklisted");
         require(amount0Out > 0 || amount1Out > 0, "Safeswap: INSUFFICIENT_OUTPUT_AMOUNT");
-        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         require(amount0Out < _reserve0 && amount1Out < _reserve1, "Safeswap: INSUFFICIENT_LIQUIDITY");
 
         uint256 balance0;
@@ -192,7 +185,7 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
             // scope for reserve{0,1}Adjusted, avoids stack too deep errors
             uint256 balance0Adjusted = balance0 * 1000 - amount0In * 2;
             uint256 balance1Adjusted = balance1 * 1000 - amount1In * 2;
-            require(balance0Adjusted * balance1Adjusted >= uint256(_reserve0) * _reserve1 * (1000**2), "Safeswap: K");
+            require(balance0Adjusted * balance1Adjusted >= uint256(_reserve0) * _reserve1 * (1000 ** 2), "Safeswap: K");
         }
 
         _update(balance0, balance1, _reserve0, _reserve1);
@@ -228,24 +221,15 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     /*=================================================== private functions ==================================================*/
     /*========================================================================================================================*/
 
-    function _safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) private {
+    function _safeTransfer(address token, address to, uint256 value) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "Safeswap: TRANSFER_FAILED");
     }
 
-        // update reserves and, on the first call per block, price accumulators
-    function _update(
-        uint256 balance0,
-        uint256 balance1,
-        uint112 _reserve0,
-        uint112 _reserve1
-    ) private {
+    // update reserves and, on the first call per block, price accumulators
+    function _update(uint256 balance0, uint256 balance1, uint112 _reserve0, uint112 _reserve1) private {
         require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, "Safeswap: OVERFLOW");
-        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
+        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
@@ -258,12 +242,10 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
         emit Sync(reserve0, reserve1);
     }
 
-    function _takeFee(
-        address token,
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) private returns (uint256 _fee) {
+    function _takeFee(address token, uint256 amountOut, uint256 reserveIn, uint256 reserveOut)
+        private
+        returns (uint256 _fee)
+    {
         require(token == token0 || token == token1, "Safeswap: INVALID_TOKEN");
         address feeTo = ISafeswapFactory(factory).feeTo();
         uint256 _totalSupply = totalSupply;
@@ -319,18 +301,9 @@ contract SafeswapPair is ISafeswapPair, SafeswapERC20, Initializable {
     /*================================================= public view functions ================================================*/
     /*========================================================================================================================*/
 
-        function getReserves()
-        public
-        view
-        returns (
-            uint112 _reserve0,
-            uint112 _reserve1,
-            uint32 _blockTimestampLast
-        )
-    {
+    function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
         _blockTimestampLast = blockTimestampLast;
     }
-
 }
