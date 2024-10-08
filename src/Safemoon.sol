@@ -183,6 +183,13 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
      * But this contract using proxy pattern, so when we upgrade contract,
      *  we need to call updateTotalExcluded() to init value of _rTotalExcluded and _tTotalExcluded
      */
+    /**
+     * @dev
+     * 우리는 _rTotalExcluded와 _tTotalExcluded라는 두 변수를 생성하여 총 t와 r 제외된 값을 저장합니다.
+     * 지갑을 제외하거나 제외 금액을 증가 또는 감소시키는 등의 모든 작업에 대해 _rTotalExcluded와 _tTotalExcluded를 업데이트합니다.
+     * 그리고 _getCurrentSupply() 함수에서 _rTotalExcluded와 _tTotalExcluded를 사용하여 for 루프를 제거합니다.
+     * 그러나 이 계약은 프록시 패턴을 사용하므로, 계약을 업그레이드할 때 _rTotalExcluded와 _tTotalExcluded의 값을 초기화하기 위해 updateTotalExcluded()를 호출해야 합니다.
+     */
     uint256 private _rTotalExcluded;
     uint256 private _tTotalExcluded;
 
@@ -365,7 +372,8 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         require(to != address(0), "BEP20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
         require(_canAction(from, to), "Paused");
-
+        
+        // owner 아니면 전송 수량 제한있음
         if (from != owner() && to != owner()) {
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
         }
@@ -374,14 +382,26 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         // tokens that we need to initiate a swap + liquidity lock?
         // also, don't get caught in a circular liquidity event.
         // also, don't swap & liquify if sender is uniswap pair.
+        // 이 계약 주소의 토큰 잔액이 스왑 및 유동성 잠금을 시작하는 데 필요한 최소 토큰 수를 초과합니까?
+        //? 또한 순환 유동성 이벤트에 걸리지 않도록 합니다. -> 뭔소리?
+        //? 또한 발신자가 유니스왑 페어인 경우 스왑 및 유동화하지 않습니다. -> 뭔소리?
         uint256 contractTokenBalance = balanceOf(address(this));
 
+        // 전송금액은 무조건 최대 _maxTxAmount 까지만 가능
         if (contractTokenBalance >= _maxTxAmount) {
             contractTokenBalance = _maxTxAmount;
         }
-
+        
+        // 이 컨트랙트(SafeMoon)에 numTokensToCollectBNB 이상의 BNB가 쌓이면 true
+        // numTokensToCollectBNB는 BNB를 collect하기 위한 최소 balance 기준으로 보임
         bool overMinTokenBalance = contractTokenBalance >= numTokensToCollectBNB;
         if (
+            // overMinTokenBalance: SafeMoon 컨트랙트에 BNB가 numTokensToCollectBNB 이상 쌓였는지
+            // !inSwapAndLiquify: owner가 setSwapAndEvolveEnabled 함수로 set
+            // swapAndEvolveEnabled: owner가 setSwapAndEvolveEnabled 함수로 set
+            // -> `inSwapAndLiquify`, `swapAndEvolveEnabled`는 `setDefaultSettings()`에서 설정 가능
+            // -> (default가 각각 inSwapAndLiquify는 false, swapAndEvolveEnabled는 true)
+            // !_isInCollectBNBWhitelist(from): sender/receiver가 listIgnoreCollectBNBAddresses mapping에 없는지 확인
             overMinTokenBalance && !inSwapAndLiquify && swapAndEvolveEnabled && !_isInCollectBNBWhitelist(from)
                 && !_isInCollectBNBWhitelist(to)
         ) {

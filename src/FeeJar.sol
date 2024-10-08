@@ -148,11 +148,7 @@ contract FeeJar is AccessControlUpgradeable {
     /*=================================================== public functions ===================================================*/
     /*========================================================================================================================*/
 
-    function withdrawBNB(address payable to) public onlyAdmin {
-        uint256 amount = address(this).balance;
-        to.transfer(amount);
-        emit WithdrawBNB(to, amount);
-    }
+
 
     /**
      * @notice Distributes any ETH in contract to relevant parties
@@ -288,5 +284,11 @@ contract FeeJar is AccessControlUpgradeable {
     function setLPFeeCollector(address newCollector) external onlyAdmin {
         emit LPFeeCollectorSet(newCollector, lpFeeCollector);
         lpFeeCollector = newCollector;
+    }
+
+    function withdrawBNB(address payable to) public onlyAdmin {
+        uint256 amount = address(this).balance;
+        to.transfer(amount);
+        emit WithdrawBNB(to, amount);
     }
 }
