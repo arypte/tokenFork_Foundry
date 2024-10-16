@@ -769,19 +769,26 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     /*================================================ internal view functions ===============================================*/
     /*========================================================================================================================*/
 
+    // 주어진 FeeTier 구조체의 수수료 합계를 확인하고 최대 수수료 제한을 초과하지 않는지 확인하는 함수
     function checkFees(FeeTier memory _tier) internal view returns (FeeTier memory) {
+        // 각 수수료를 더하여 총 수수료를 계산
         uint256 _fees =
             _tier.ecoSystemFee.add(_tier.liquidityFee).add(_tier.taxFee).add(_tier.ownerFee).add(_tier.burnFee);
+        // 총 수수료가 최대 수수료 제한을 초과하지 않는지 확인
         require(_fees <= _maxFee, "Safemoon: Fees exceeded max limitation");
 
+        // FeeTier 구조체를 반환
         return _tier;
     }
 
+    // 수수료가 변경되었을 때, 변경된 수수료를 반영하여 최대 수수료 제한을 초과하지 않는지 확인하는 함수
     function checkFeesChanged(FeeTier memory _tier, uint256 _oldFee, uint256 _newFee) internal view {
+        // 변경된 수수료를 반영하여 총 수수료를 계산
         uint256 _fees = _tier.ecoSystemFee.add(_tier.liquidityFee).add(_tier.taxFee).add(_tier.ownerFee).add(
             _tier.burnFee
         ).sub(_oldFee).add(_newFee);
 
+        // 총 수수료가 최대 수수료 제한을 초과하지 않는지 확인
         require(_fees <= _maxFee, "Safemoon: Fees exceeded max limitation");
     }
 
