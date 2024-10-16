@@ -74,6 +74,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     uint256 private _tFeeTotal;
     uint256 private _maxFee;
 
+    // ERC20 관련 변수
     string private _name;
     string private _symbol;
     uint8 private _decimals;
@@ -94,7 +95,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled;
 
-    uint256 public _maxTxAmount;
+    uint256 public _maxTxAmount; //! 하나의 tx에 들어갈 수 있는 최대 input amount 값
     uint256 private numTokensSellToAddToLiquidity;
 
     bool private _upgraded;
@@ -215,10 +216,12 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     }
 
     function __Safemoon_v2_init_unchained() internal initializer {
+        //! 수정 필요
         _name = "SafeMoon";
         _symbol = "SFM";
         _decimals = 9;
 
+        //! config
         _tTotal = 1000000 * 10 ** 6 * 10 ** 9;
         _rTotal = (MAX - (MAX % _tTotal));
         _maxFee = 1000;
@@ -231,6 +234,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         _burnAddress = 0x000000000000000000000000000000000000dEaD;
         _initializerAccount = _msgSender();
         _rOwned[_initializerAccount] = _rTotal;
+
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
@@ -243,8 +247,10 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     function initRouterAndPair(address _router) external onlyOwner {
         uniswapV2Router = IUniswapV2Router02(_router);
         WBNB = uniswapV2Router.WETH();
-        // Create a uniswap pair for this new token
-        uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), WBNB, address(this));
+        // Create - uniswap pair for this new token
+        
+        // uniswap V2의 pair를 따라감
+        uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), WBNB, address(this)); 
     }
 
     function __Safemoon_tiers_init() internal initializer {
@@ -258,18 +264,21 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     /*=================================================== public functions ===================================================*/
     /*========================================================================================================================*/
 
+    // ERC20 transfer 함수와 동이라
     function transfer(address recipient, uint256 amount) public override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
+    // ERC20 approve 함수와 동일
     function approve(address spender, uint256 amount) public override whenNotPaused returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
 
+    // ERC20 transferFrom이랑 동일
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-        _transfer(sender, recipient, amount);
+        _transfer(sender, recipient, amount); //! 얘만 좀 살펴봐야 함
         _approve(
             sender,
             _msgSender(),
@@ -285,6 +294,8 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         if (msg.sender != owner()) {
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
         }
+        
+        //! 얘를 잘 살펴볼 것
         _tokenTransfer(bridgeBurnAddress, user, amount, 0, false);
     }
 
@@ -292,8 +303,15 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         if (msg.sender != owner()) {
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
         }
+
+        //! 얘를 잘 살펴볼 것
         _tokenTransfer(msg.sender, bridgeBurnAddress, amount, 0, false);
     }
+
+    /* 
+        전반적인 외부 노출 public 함수들은 평범함, 
+        but _transfer 및 _tokenTransfer 로직을 잘 살펴봐야 함
+     */
 
     /*========================================================================================================================*/
     /*================================================== external functions ==================================================*/
@@ -336,7 +354,10 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     /*========================================================================================================================*/
 
     function _reflectFee(uint256 rFee, uint256 tFee) private {
+        // _rTotal은 전체 반영된 토큰의 총량을 나타내며, rFee를 차감하여 업데이트
         _rTotal = _rTotal.sub(rFee);
+        
+        // _tFeeTotal은 누적된 총 수수료를 나타내며, tFee를 더하여 업데이트
         _tFeeTotal = _tFeeTotal.add(tFee);
     }
 
@@ -496,29 +517,79 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         );
     }
 
-    //this method is responsible for taking all fee, if takeFee is true
+    // this method is responsible for taking all fee, if takeFee is true
     function _tokenTransfer(address sender, address recipient, uint256 amount, uint256 tierIndex, bool takeFee)
         private
     {
         if (!takeFee) removeAllFee();
 
+        // sender / recipient
         if (!_isExcluded[sender] && !_isExcluded[recipient]) {
+            // X / X 
             _transferStandard(sender, recipient, amount, tierIndex);
         } else if (_isExcluded[sender] && !_isExcluded[recipient]) {
+            // O / X (from excluded)
             _transferFromExcluded(sender, recipient, amount, tierIndex);
         } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
+            // X / O (recipient만 excluded)
             _transferToExcluded(sender, recipient, amount, tierIndex);
         } else if (_isExcluded[sender] && _isExcluded[recipient]) {
+            // O / O (sender & recipient 모두 excluded)
             _transferBothExcluded(sender, recipient, amount, tierIndex);
         }
 
         if (!takeFee) restoreAllFee();
     }
 
+    function _transferStandard(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
+        FeeValues memory _values = _getValues(tAmount, tierIndex);
+        
+        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount); // sender가 보낸 양을 차감
+
+        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount); // 뗼거 다떼고 실제로 받은 양을 더함
+
+        _takeFees(sender, _values, tierIndex);
+
+        _reflectFee(_values.rFee, _values.tFee);
+
+        emit Transfer(sender, recipient, _values.tTransferAmount);
+    }
+
     // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
+    // or when increase, decrease exclude value
+    function _transferFromExcluded(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
+        FeeValues memory _values = _getValues(tAmount, tierIndex);
+        _tOwned[sender] = _tOwned[sender].sub(tAmount);
+        //        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
+        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
+        _tTotalExcluded = _tTotalExcluded.sub(tAmount);
+        _rTotalExcluded = _rTotalExcluded.sub(_values.rAmount);
+
+        _takeFees(sender, _values, tierIndex);
+        _reflectFee(_values.rFee, _values.tFee);
+        emit Transfer(sender, recipient, _values.tTransferAmount);
+    }
+
+    // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
+    // or when increase, decrease exclude value
+    function _transferToExcluded(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
+        FeeValues memory _values = _getValues(tAmount, tierIndex);
+        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
+        _tOwned[recipient] = _tOwned[recipient].add(_values.tTransferAmount);
+        //        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
+        _tTotalExcluded = _tTotalExcluded.add(_values.tTransferAmount);
+        _rTotalExcluded = _rTotalExcluded.add(_values.rTransferAmount);
+
+        _takeFees(sender, _values, tierIndex);
+        _reflectFee(_values.rFee, _values.tFee);
+        emit Transfer(sender, recipient, _values.tTransferAmount);
+    }
+
+        // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
     // or when increase, decrease exclude value
     function _transferBothExcluded(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
         FeeValues memory _values = _getValues(tAmount, tierIndex);
+
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         //        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(_values.tTransferAmount);
@@ -546,50 +617,18 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         emit Transfer(sender, recipient, _values.tTransferAmount);
     }
 
-    function _transferStandard(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
-        FeeValues memory _values = _getValues(tAmount, tierIndex);
-        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
-        _takeFees(sender, _values, tierIndex);
-        _reflectFee(_values.rFee, _values.tFee);
-        emit Transfer(sender, recipient, _values.tTransferAmount);
-    }
-
-    // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
-    // or when increase, decrease exclude value
-    function _transferToExcluded(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
-        FeeValues memory _values = _getValues(tAmount, tierIndex);
-        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
-        _tOwned[recipient] = _tOwned[recipient].add(_values.tTransferAmount);
-        //        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
-        _tTotalExcluded = _tTotalExcluded.add(_values.tTransferAmount);
-        _rTotalExcluded = _rTotalExcluded.add(_values.rTransferAmount);
-
-        _takeFees(sender, _values, tierIndex);
-        _reflectFee(_values.rFee, _values.tFee);
-        emit Transfer(sender, recipient, _values.tTransferAmount);
-    }
-
-    // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
-    // or when increase, decrease exclude value
-    function _transferFromExcluded(address sender, address recipient, uint256 tAmount, uint256 tierIndex) private {
-        FeeValues memory _values = _getValues(tAmount, tierIndex);
-        _tOwned[sender] = _tOwned[sender].sub(tAmount);
-        //        _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
-        _tTotalExcluded = _tTotalExcluded.sub(tAmount);
-        _rTotalExcluded = _rTotalExcluded.sub(_values.rAmount);
-
-        _takeFees(sender, _values, tierIndex);
-        _reflectFee(_values.rFee, _values.tFee);
-        emit Transfer(sender, recipient, _values.tTransferAmount);
-    }
 
     function _takeFees(address sender, FeeValues memory values, uint256 tierIndex) private {
-        _takeFee(sender, values.tLiquidity, address(this));
-        _takeFee(sender, values.tEchoSystem, feeTiers[tierIndex].ecoSystem);
-        _takeFee(sender, values.tOwner, feeTiers[tierIndex].owner);
-        _takeBurn(sender, values.tBurn);
+        // 유동성 수수료를 컨트랙트 주소로 전송
+        _takeFee(sender, values.tLiquidity, address(this)); 
+
+        // 에코시스템 수수료를 에코시스템 주소로 전송
+        _takeFee(sender, values.tEchoSystem, feeTiers[tierIndex].ecoSystem); 
+
+        // 소유자 수수료를 소유자 주소로 전송
+        _takeFee(sender, values.tOwner, feeTiers[tierIndex].owner); 
+
+        _takeBurn(sender, values.tBurn); // 소각 수수료를 소각 주소로 전송
     }
 
     // we update _rTotalExcluded and _tTotalExcluded when add, remove wallet from excluded list
@@ -751,38 +790,51 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     /*========================================================================================================================*/
 
     function _getValues(uint256 tAmount, uint256 _tierIndex) private view returns (FeeValues memory) {
+        // 돈 다뜯고 남은 값
         tFeeValues memory tValues = _getTValues(tAmount, _tierIndex);
+        
+        // 전송 수수료
+        // tTransferFee = tLiquidity + tEchoSystem + tOwner + tBurn
         uint256 tTransferFee = tValues.tLiquidity.add(tValues.tEchoSystem).add(tValues.tOwner).add(tValues.tBurn);
+        
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) =
             _getRValues(tAmount, tValues.tFee, tTransferFee, _getRate());
+
         return FeeValues(
-            rAmount,
-            rTransferAmount,
-            rFee,
-            tValues.tTransferAmount,
-            tValues.tEchoSystem,
-            tValues.tLiquidity,
-            tValues.tFee,
-            tValues.tOwner,
-            tValues.tBurn
+            rAmount, // 
+            rTransferAmount, // 수수료를 제외한 실제 전송될 토큰의 양
+            rFee, // 전송 수수료
+            tValues.tTransferAmount, // 수수료를 제외한 실제 전송될 토큰의 양 (t 값)
+            tValues.tEchoSystem, // 에코시스템 수수료
+            tValues.tLiquidity, // 유동성 수수료
+            tValues.tFee, // 전송 수수료 (t 값)
+            tValues.tOwner, // 소유자 수수료
+            tValues.tBurn // 소각 수수료
         );
     }
 
+    //! 전송 시 tAmount에서 공제되는 각종 fee들 계산 후 리턴
     function _getTValues(uint256 tAmount, uint256 _tierIndex) private view returns (tFeeValues memory) {
         FeeTier memory tier = feeTiers[_tierIndex];
+        
+        //! 전송 시 각종 수수료들
         tFeeValues memory tValues = tFeeValues(
             0,
-            calculateFee(tAmount, tier.ecoSystemFee),
-            calculateFee(tAmount, tier.liquidityFee),
-            calculateFee(tAmount, tier.taxFee),
-            calculateFee(tAmount, tier.ownerFee),
-            calculateFee(tAmount, tier.burnFee)
+            calculateFee(tAmount, tier.ecoSystemFee), // tAmount * (ecoSystemFee / 10000)
+            calculateFee(tAmount, tier.liquidityFee), // tAmount * (liquidityFee / 10000)
+            calculateFee(tAmount, tier.taxFee), // tAmount * (taxFee / 10000)   
+            calculateFee(tAmount, tier.ownerFee), // tAmount * (ownerFee / 10000)
+            calculateFee(tAmount, tier.burnFee) // tAmount * (burnFee / 10000)
         );
 
+        // tAmount - (ecoSystemFee + liquidityFee + taxFee + ownerFee + burnFee)
+        // t가 transfer라는 뜻인듯 
         tValues.tTransferAmount = tAmount.sub(tValues.tEchoSystem).sub(tValues.tFee).sub(tValues.tLiquidity).sub(
             tValues.tOwner
         ).sub(tValues.tBurn);
 
+        // tAmount는 tAmount에서 돈 다 뜯어내고 남은 값
+        // 나머지 필드는 뜯는 항목들
         return tValues;
     }
 
@@ -795,9 +847,14 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         if (_rTotalExcluded > _rTotal || _tTotalExcluded > _tTotal) {
             return (_rTotal, _tTotal);
         }
+
+        // rSupply = (_rTotal - _rTotalExcluded)
         uint256 rSupply = _rTotal.sub(_rTotalExcluded);
+
+        // tSupply = (_tTotal - _tTotalExcluded)
         uint256 tSupply = _tTotal.sub(_tTotalExcluded);
 
+        // rSupply < (_rTotal / _tTotal) 인 경우
         if (rSupply < _rTotal.div(_tTotal)) return (_rTotal, _tTotal);
 
         return (rSupply, tSupply);
@@ -824,18 +881,26 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     /*================================================== private pure functions ==============================================*/
     /*========================================================================================================================*/
 
+    // 
     function _getRValues(uint256 tAmount, uint256 tFee, uint256 tTransferFee, uint256 currentRate)
         private
         pure
         returns (uint256, uint256, uint256)
-    {
+    {   
         uint256 rAmount = tAmount.mul(currentRate);
+
         uint256 rFee = tFee.mul(currentRate);
+
         uint256 rTransferFee = tTransferFee.mul(currentRate);
+
+        // rTransferAmount = rAmount - rFee - rTransferFee
         uint256 rTransferAmount = rAmount.sub(rFee).sub(rTransferFee);
+
         return (rAmount, rTransferAmount, rFee);
     }
 
+    // amount * (fee / 10000) 을 반환
+    // 예를 들어, 10000 * (100 / 10000) = 100
     function calculateFee(uint256 _amount, uint256 _fee) private pure returns (uint256) {
         if (_fee == 0) return 0;
         return _amount.mul(_fee).div(10 ** 4);
