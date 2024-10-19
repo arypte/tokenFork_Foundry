@@ -14,6 +14,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 
 contract TestSetup is Test {
     uint256 constant INITIAL_BALANCE = 1000e18; // 1000 ETH
+    uint256 constant SFT_DECIMAL = 1e9;
 
     /* Impl */
     address public safeMoonImpl;
