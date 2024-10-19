@@ -65,6 +65,8 @@ contract TestSetup is Test {
 
         // 컨트랙트 config 설정
         _initializeAndSetConfigs();
+
+        _fundSFT();
     }
 
     function _setupUsers() internal {
@@ -179,7 +181,14 @@ contract TestSetup is Test {
         console.log("A : " , accountA);
         console.log("B : " , accountB);
         console.log("C : " , accountC);
-
     }
 
+    function _fundSFT() internal {
+        // owner 계정에서 민팅
+        vm.startPrank(owner); // owner로 행동을 시뮬레이션
+        safeMoon.mint(accountA, 10000 * SFT_DECIMAL); // A 계정에 10000 토큰 민팅
+        safeMoon.mint(accountB, 20000 * SFT_DECIMAL); // B 계정에 20000 토큰 민팅
+        safeMoon.mint(accountC, 30000 * SFT_DECIMAL); // B 계정에 30000 토큰 민팅
+        vm.stopPrank();
+    }
 }

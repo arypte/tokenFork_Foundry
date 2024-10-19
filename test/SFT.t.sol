@@ -25,30 +25,25 @@ contract SFT is TestSetup {
             3. 100 SFT 판매
          */
 
-        // owner 계정에서 민팅
-        vm.startPrank(owner); // owner로 행동을 시뮬레이션
-        safeMoon.mint(accountA, 10000 * SFT_DECIMAL); // A 계정에 10000 토큰 민팅
-        safeMoon.mint(accountB, 20000 * SFT_DECIMAL); // B 계정에 20000 토큰 민팅
-        safeMoon.mint(accountC, 30000 * SFT_DECIMAL); // B 계정에 30000 토큰 민팅
-        vm.stopPrank();
+
 
         // ISafeswapERC20 v2pair = ISafeswapERC20(safeswapFactory.getPair(address(safeMoon), WETH));
 
+        /* 
+            1. AccountA: (5000 SFT, 5 ETH) LP 공급
+            2. AccountB: 1000 SFT를 판매
+        */
         vm.startPrank(accountA);
         safeMoon.approve(address(safeswapRouterProxy1), 5000 * SFT_DECIMAL);
-        safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(address(safeMoon), 5000 * SFT_DECIMAL, 0, 0, accountA, 0);
+        safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(
+            address(safeMoon),      // token
+            5000 * SFT_DECIMAL,     // amountTokenDesired
+            0,                      // amountTokenMin
+            0,                      // amountETHMin
+            accountA,               // to
+            0                       // deadline
+        );
         vm.stopPrank();
-
-        // ISafeswapERC20 weth = ISafeswapERC20(WETH);
-        // console.log("before Swap");
-        // console.log("owner sft balance : ", safeMoon.balanceOf(owner));
-        // console.log("owner weth balance : ", weth.balanceOf(owner));
-        // console.log("owner balance : ", owner.balance);
-        // console.log("pair sft bal : ", safeMoon.balanceOf(address(v2pair)));
-        // console.log("pair weth bal : ", weth.balanceOf(address(v2pair)));
-        // console.log("Bbal : ", safeMoon.balanceOf(accountB));
-        // console.log("Cbal : ", safeMoon.balanceOf(accountC));
-        
 
         address[] memory path = new address[](2);
         path[0] = address(safeMoon);
@@ -63,17 +58,8 @@ contract SFT is TestSetup {
 
         /* AccountB 판매 */
         vm.startPrank(accountB);
-        safeMoon.approve(address(safeswapRouterProxy1), 2000 * SFT_DECIMAL);
+        safeMoon.approve(address(safeswapRouterProxy1), 1000 * SFT_DECIMAL);
         safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{value: 1 ether}(tradeParam);
         vm.stopPrank();
-
-        // console.log("after Swap");
-        // console.log("owner sft balance : ", safeMoon.balanceOf(owner));
-        // console.log("owner weth balance : ", weth.balanceOf(owner));
-        // console.log("owner balance : ", owner.balance);
-        // console.log("pair sft bal : ", safeMoon.balanceOf(address(v2pair)));
-        // console.log("pair weth bal : ", weth.balanceOf(address(v2pair)));
-        // console.log("Bbal : ", safeMoon.balanceOf(accountB));
-        // console.log("Cbal : ", safeMoon.balanceOf(accountC));
     }
 }
