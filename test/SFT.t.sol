@@ -71,5 +71,4 @@ contract SFT is TestSetup {
         console.log("Bbal : " , safeMoon.balanceOf(accountB));
         console.log("Cbal : " , safeMoon.balanceOf(accountC));
     }
-
 }

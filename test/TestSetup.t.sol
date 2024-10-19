@@ -117,27 +117,35 @@ contract TestSetup is Test {
         safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new ERC1967Proxy(safeSwapTradeRouterImpl, ""))));
         feeJar = FeeJar(payable(address(new ERC1967Proxy(feeJarImpl, ""))));
 
+        vm.label(address(safeMoon), "safeMoon");
+        vm.label(address(safeswapFactory), "safeswapFactory");
+        vm.label(address(safeswapRouterProxy1), "safeswapRouterProxy1");
+        vm.label(address(safeswapRouterProxy2), "safeswapRouterProxy2");
+        vm.label(address(safeswapPair), "safeswapPair");
+        vm.label(address(safeSwapTradeRouter), "safeSwapTradeRouter");
+        vm.label(address(feeJar), "feeJar");
+
         vm.stopPrank();
     }
 
     function _initializeAndSetConfigs() internal {
         vm.startPrank(owner);
 
+        /* SafeMoon */
         safeMoon.initialize();
+        safeMoon.setWhitelistMintBurn(owner, true);
+        safeMoon.setBridgeBurnAddress(owner);
         assertEq(safeMoon.owner(), owner, "SafeMoon: owner is not owner");
 
-        safeswapFactory.initialize(owner, owner); // feeTo, feeToSetter
-        safeswapFactory.setImplementation(address(safeswapPair));
-
+        /* SafeswapRouterProxy1 */
         safeswapRouterProxy1.initialize(address(safeswapFactory), WETH); // TODO: impl인지 proxy인지 확인
         
-        // TODO: Pair 설정 어떻게?
+        /* SafeswapFactory */
+        safeswapFactory.initialize(owner, owner); // feeTo, feeToSetter
+        safeswapFactory.setImplementation(address(safeswapPair));
         safeswapFactory.setRouter(address(safeswapRouterProxy1));
         safeswapFactory.approveLiquidityPartner(owner);
         safeswapFactory.approveLiquidityPartner(address(safeMoon));
-
-        safeMoon.setWhitelistMintBurn(owner, true);
-        safeMoon.setBridgeBurnAddress(owner);
 
         /* FeeJar */
         feeJar.initialize(
@@ -152,14 +160,15 @@ contract TestSetup is Test {
             100                        // _supportFee (0.5%)
         );
 
+        /* SafeSwapTradeRouter */
         safeSwapTradeRouter.initialize(address(feeJar), address(safeswapRouterProxy1), 10, 100);
-        safeswapRouterProxy1.setRouterTrade(address(safeSwapTradeRouter));
         
-        safeswapRouterProxy1.setImpls(1,address(safeswapRouterProxy2));
+        /* SafeswapRouterProxy1 */
+        safeswapRouterProxy1.setRouterTrade(address(safeSwapTradeRouter));
+        safeswapRouterProxy1.setImpls(1,address(safeswapRouterProxy2Impl));
         safeswapRouterProxy1.setWhitelist(address(safeSwapTradeRouter),true);
 
         safeMoon.initRouterAndPair(address(safeswapRouterProxy1));
-
         vm.stopPrank();
 
         console.log("Owner:", owner);
