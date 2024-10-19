@@ -154,18 +154,25 @@ contract FeeJar is AccessControlUpgradeable {
      * @notice Distributes any ETH in contract to relevant parties
      */
     function fee() public payable returns (uint256, uint256, uint256) {
+        // 보내진 fee
         uint256 feeBalance = msg.value;
+        
+        // 보내진 fee가 없는 경우
         if (feeBalance == 0) {
             return (0, 0, 0);
         }
+
+        // 차감할 fee 계산
         (uint256 buyBackAndBurnFeeAmount, uint256 supportFeeAmount, uint256 lpFeeAmount) = getFeeAmount(feeBalance);
         address supportFeeCollector;
 
+        // buyBackAndBurnFee가 있는 경우 계산된값 전송
         if (buyBackAndBurnFee > 0) {
             (bool buyBackAndBurnFeeSuccess,) = buyBackAndBurnFeeCollector.call{value: buyBackAndBurnFeeAmount}("");
             require(buyBackAndBurnFeeSuccess, "Swap Fee: Could not collect network fee");
         }
 
+        // supportFee가 있는 경우 계산된값 전송 
         if (supportFee > 0) {
             supportFeeCollector = ISafeswapFactory(factory).feeTo();
             bool feeOn = supportFeeCollector != address(0);
@@ -175,6 +182,7 @@ contract FeeJar is AccessControlUpgradeable {
             }
         }
 
+        // lpFee가 있는 경우 계산된값 전송
         if (address(this).balance > 0) {
             uint256 lpAmount = address(this).balance;
             (bool success,) = lpFeeCollector.call{value: lpAmount}("");
@@ -246,9 +254,11 @@ contract FeeJar is AccessControlUpgradeable {
         if (buyBackAndBurnFee > 0) {
             buyBackAndBurnFeeAmount = (totalFee * buyBackAndBurnFee) / maxPercentage;
         }
+
         if (lpFee > 0) {
             lpFeeAmount = (totalFee * lpFee) / maxPercentage;
         }
+
         if (supportFee > 0) {
             supportFeeAmount = (totalFee * supportFee) / maxPercentage;
         }

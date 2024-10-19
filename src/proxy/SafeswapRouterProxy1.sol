@@ -199,13 +199,21 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         address to,
         uint256 deadline
     ) external payable virtual ensure(deadline) returns (uint256 amountToken, uint256 amountETH, uint256 liquidity) {
+        //! 여기서 fee를 떼는듯
         (amountToken, amountETH) =
             _addLiquidity(token, WETH, amountTokenDesired, msg.value, amountTokenMin, amountETHMin, to);
+
+        // msg.sender에서 pair로 amountToken 전송
         address pair = SafeswapLibrary.pairFor(factory, token, WETH);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
+
+        // WETH 주소에서 pair로 amountETH 전송
         IWETH(WETH).deposit{value: amountETH}();
         assert(IWETH(WETH).transfer(pair, amountETH));
+        
+        // pair에서 to에게 LP를 mint
         liquidity = ISafeswapPair(pair).mint(to);
+
         // refund dust eth, if any
         if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
     }
@@ -568,14 +576,22 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
         if (ISafeswapFactory(factory).getPair(tokenA, tokenB) == address(0)) {
             ISafeswapFactory(factory).createPair(tokenA, tokenB, to);
         }
+
+        // pair에 있는 토큰 예치량
         (uint256 reserveA, uint256 reserveB) = SafeswapLibrary.getReserves(factory, tokenA, tokenB);
+
+        // reserveA, reserveB가 0인 경우 그냥 요청하는 대로 넣어줌
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
+
         } else {
+            // 이론적인 amountB값
             uint256 amountBOptimal = SafeswapLibrary.quote(amountADesired, reserveA, reserveB);
+
             if (amountBOptimal <= amountBDesired) {
                 require(amountBOptimal >= amountBMin, "SafeswapRouter: INSUFFICIENT_B_AMOUNT");
                 (amountA, amountB) = (amountADesired, amountBOptimal);
+
             } else {
                 uint256 amountAOptimal = SafeswapLibrary.quote(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
@@ -587,12 +603,18 @@ contract SafeswapRouterProxy1 is ISafeswapRouter01, Initializable {
 
     function _swap(uint256[] memory amounts, address[] memory path, address _to) internal virtual {
         for (uint256 i; i < path.length - 1; i++) {
+
             (address input, address output) = (path[i], path[i + 1]);
+
             (address token0,) = SafeswapLibrary.sortTokens(input, output);
+
             uint256 amountOut = amounts[i + 1];
+
             (uint256 amount0Out, uint256 amount1Out) =
                 input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
+
             address to = i < path.length - 2 ? SafeswapLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            
             ISafeswapPair(SafeswapLibrary.pairFor(factory, input, output)).swap(
                 amount0Out, amount1Out, to, new bytes(0)
             );

@@ -157,11 +157,13 @@ contract SafeswapRouterProxy2 is Initializable {
     ) external virtual ensure(deadline) onlyWhitelist returns (uint256[] memory amounts) {
         amounts = SafeswapLibrary.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, "SafeswapRouter: EXCESSIVE_INPUT_AMOUNT");
+        
         if (nameToInfo[path[1]].enabled == true && killSwitch == false && (nameToInfo[path[1]].buyFeePercent > 0)) {
             uint256 deduction = (amountOut * nameToInfo[path[1]].buyFeePercent) / ONE;
             amountOut = amountOut - deduction;
         }
         amounts = SafeswapLibrary.getAmountsIn(factory, amountOut, path);
+
         if (nameToInfo[path[0]].enabled == true && killSwitch == false && (nameToInfo[path[0]].sellFeePercent > 0)) {
             uint256 amountIn = amounts[0];
             uint256 deduction = (amountIn * nameToInfo[path[0]].sellFeePercent) / ONE;

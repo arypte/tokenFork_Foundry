@@ -198,19 +198,37 @@ contract SafeSwapTradeRouter is Initializable {
      * @notice Swap tokens for BNB and pay amount of BNB as fee
      * @param trade Trade details
      */
+    // input = tokenAFee + swapInput
     function swapExactTokensForETHAndFeeAmount(Trade memory trade) external payable isSwapRangeValid(trade.path) {
+        // TODO: 뭔지 모르겠음 아직
         uint256[] memory lastLpsPrices = _calcLpsLastPrice(trade.path);
 
+        //! dex fee 계산
+
+        /* 
+            Dex Fee - User 입장에서 낼 금액
+            Fee Jar - 운영자 입장에서 분배되는 금액 (BuybackAndBurn, Supporter, LP)
+         */
         (, uint256 dexFee, uint256 tokenAFee,) = getFees(trade.path, trade.amountIn, msg.sender);
+
         require(msg.value >= dexFee, "SafeswapRouter: You must send enough BNB to cover fee");
+
+        //! Dex Fee는 Fee Jar로 분배
         _feeAmountBNB(address(this).balance);
 
         if (tokenAFee > 0) {
+            //! 여기가 fee 떼는 곳
+            // tokenA -> WETH로 스왑
             _claimTokenFee(trade.path[0], msg.sender, TransactionType.SELL, trade.amountIn, tokenAFee, false);
+
+            //! 나머지를 swap
             _swapExactTokensForETH(
                 _getContractBalance(trade.path[0]), trade.amountOut, trade.path, address(this), trade.to, trade.deadline
             );
+
+            // 화리인 경우
         } else {
+            //! 화리인 경우 전체를 그대로 swap
             _swapExactTokensForETH(trade.amountIn, trade.amountOut, trade.path, msg.sender, trade.to, trade.deadline);
         }
 
@@ -573,7 +591,10 @@ contract SafeSwapTradeRouter is Initializable {
     function _feeWithTokens(uint256 _fee, address _payInToken, bool _claimFee) internal {
         TransferHelper.safeApprove(_payInToken, address(swapRouter), _fee);
 
+        // WETH로 변환
         _swapExactTokensForETH(_fee, 0, _mapPath(_payInToken, WETH()), address(this), address(this), block.timestamp);
+
+        //! fee
         if (_claimFee) {
             _feeAmountBNB(address(this).balance);
         }
@@ -701,12 +722,16 @@ contract SafeSwapTradeRouter is Initializable {
         bool _transferBalance
     ) private {
         if (tokensFeeList[_token][_transactionType].tokenInfo.isEnabled && _totalFeeAmount > 0) {
+
+            // _transferBalance가 false인 경우에는 들고옴 (뭔차이인지 모르겠다)
             if (!_transferBalance) {
                 TransferHelper.safeTransferFrom(_token, _address, address(this), _amountIn);
             }
 
+            // fee를 WETH로 변환
             _feeWithTokens(_totalFeeAmount, _token, false);
 
+            // TODO: 아직 못봄
             _distributeTokenFee(_token, _transactionType, address(this).balance);
 
             if (_transferBalance) {
@@ -733,6 +758,7 @@ contract SafeSwapTradeRouter is Initializable {
         view
         returns (uint256 totalBNBFee, uint256 dexFee, uint256 tokenAFee, uint256 tokenBFee)
     {
+        // 화리는 fee 안뗌
         if (whitelistFfsFee[_address]) {
             return (0, 0, 0, 0);
         }
@@ -881,6 +907,7 @@ contract SafeSwapTradeRouter is Initializable {
     function getDexSwapFee(uint256 amountIn, address tokenA, address tokenB) internal view returns (uint256 _fee) {
         uint256 amountOut;
 
+        // tokenA가 WETH 아닌 경우
         if (!_isNativeToken(tokenA)) {
             amountOut = _getAmountOut(amountIn, tokenA, WETH(), true);
             if (amountOut == 0) {
@@ -891,6 +918,7 @@ contract SafeSwapTradeRouter is Initializable {
             _fee = (amountOut * feePercent) / percent;
         }
 
+        // tokenA가 WETH인 경우
         if (_isNativeToken(tokenA) || amountOut == 0) {
             int256 decimals = 18 - int8(IERC20(tokenA).decimals());
             if (decimals < 0) {

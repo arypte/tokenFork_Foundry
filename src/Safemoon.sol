@@ -576,7 +576,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         FeeValues memory _values = _getValues(tAmount, tierIndex);
         _rOwned[sender] = _rOwned[sender].sub(_values.rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(_values.tTransferAmount);
-        //        _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
+        //    _rOwned[recipient] = _rOwned[recipient].add(_values.rTransferAmount);
         _tTotalExcluded = _tTotalExcluded.add(_values.tTransferAmount);
         _rTotalExcluded = _rTotalExcluded.add(_values.rTransferAmount);
 
