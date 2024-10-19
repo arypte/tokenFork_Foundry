@@ -9,7 +9,7 @@ import { SafeswapRouterProxy2 } from "../src/implmentation/SafeswapRouterProxy2.
 import { FeeJar } from "../src/implmentation/FeeJar.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
-
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract SFT is Test {
     Safemoon public safeMoon;

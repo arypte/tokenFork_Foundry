@@ -1,2 +1,3 @@
 forge-std/=lib/forge-std/src/
-Contract.sol/=src/Contract.sol/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
