@@ -26,7 +26,7 @@ contract SFT is TestSetup {
         safeMoon.mint(accountC, 300 * 10 ** 9); // B 계정에 2000 토큰 민팅
         vm.stopPrank();
 
-        ISafeswapERC20 v2pair = ISafeswapERC20(0x7cDAe6c8861BBCf9bc66eFcDFFb3AA1D1d2644f8);
+        ISafeswapERC20 v2pair = ISafeswapERC20(safeswapFactory.getPair(address(safeMoon),WETH));
         
         vm.prank(accountA);        
         safeMoon.approve(address(safeswapRouterProxy1), 100 * 10 ** 9);
