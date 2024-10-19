@@ -34,7 +34,7 @@ contract SFT is TestSetup {
 
         // ISafeswapERC20 v2pair = ISafeswapERC20(safeswapFactory.getPair(address(safeMoon), WETH));
 
-        vm.prank(accountA);
+        vm.startPrank(accountA);
         safeMoon.approve(address(safeswapRouterProxy1), 5000 * SFT_DECIMAL);
         safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(address(safeMoon), 5000 * SFT_DECIMAL, 0, 0, accountA, 0);
         vm.stopPrank();
@@ -48,13 +48,14 @@ contract SFT is TestSetup {
         // console.log("pair weth bal : ", weth.balanceOf(address(v2pair)));
         // console.log("Bbal : ", safeMoon.balanceOf(accountB));
         // console.log("Cbal : ", safeMoon.balanceOf(accountC));
+        
 
         address[] memory path = new address[](2);
         path[0] = address(safeMoon);
         path[1] = WETH;
         SafeSwapTradeRouter.Trade memory tradeParam = SafeSwapTradeRouter.Trade({
-            amountIn: 1000 * SFT_DECIMAL,
-            amountOut: 0.1 ether,
+            amountIn: 1000 * 10 ** 9,
+            amountOut: 1 * 10 ** 17,
             path: path,
             to: payable(accountB),
             deadline: block.timestamp + 1000
