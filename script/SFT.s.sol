@@ -35,6 +35,7 @@ contract DeploySFT is Script {
     SafeSwapTradeRouter public safeSwapTradeRouter;
     FeeJar public feeJar;
     address public WETH = 0x4200000000000000000000000000000000000006;
+    
     function run() public {
         vm.startBroadcast(pvk_Owner);
 
