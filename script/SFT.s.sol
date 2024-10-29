@@ -25,6 +25,8 @@ contract DeploySFT is Script {
     address accountB = vm.addr(pvk_B);
     address accountC = vm.addr(pvk_C);
     address owner = vm.addr(pvk_Owner);
+    address feeseter = 0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030;
+
 
     Safemoon public safeMoon;
     SafeswapFactory public safeswapFactory;
@@ -35,9 +37,10 @@ contract DeploySFT is Script {
     SafeSwapTradeRouter public safeSwapTradeRouter;
     FeeJar public feeJar;
     address public WETH = 0x4200000000000000000000000000000000000006;
-    
-    function run() public {
-        vm.startBroadcast(pvk_Owner);
+
+    function setupContract() public { 
+
+         vm.startBroadcast(pvk_Owner);
 
         safeMoon = new Safemoon();
         // safeMoon 초기화
@@ -91,11 +94,16 @@ contract DeploySFT is Script {
         safeMoon.mint(accountA, 10000 * 10 ** 9); // A 계정에 1000 토큰 민팅
         safeMoon.mint(accountB, 20000 * 10 ** 9); // B 계정에 2000 토큰 민팅
         safeMoon.mint(accountC, 30000 * 10 ** 9); // B 계정에 2000 토큰 민팅
+        safeMoon.mint(feeseter, 30000 * 10 ** 9); // B 계정에 2000 토큰 민팅
 
         vm.stopBroadcast();
 
-        console.log("Before safeMoon C bal :" , safeMoon.balanceOf(accountC));
+        console.log("setup safeMoon A bal :" , safeMoon.balanceOf(accountA));
+        console.log("setup safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("setup safeMoon C bal :" , safeMoon.balanceOf(accountC));
+    }
 
+    function addLiquidity() public {
         vm.startBroadcast(pvk_A);        
         safeMoon.approve(address(safeswapRouterProxy1), 5000 * 10 ** 9);
         safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(address(safeMoon), 5000 * 10 ** 9,0,0,accountA,0);
@@ -104,8 +112,15 @@ contract DeploySFT is Script {
         address pairAddr = safeswapFactory.getPair(address(safeMoon),WETH);
         ISafeswapERC20 v2pair = ISafeswapERC20(pairAddr);
 
-        console.log("After LP AddLiquidity safeMoon C bal :" , safeMoon.balanceOf(accountC));
 
+        console.log("after adLq safeMoon A bal :" , safeMoon.balanceOf(accountA));
+        console.log("after adLq safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("afeer adLq safeMoon C bal :" , safeMoon.balanceOf(accountC));
+
+        console.log("After LP AddLiquidity safeMoon C bal :" , safeMoon.balanceOf(accountC));
+    }
+
+    function swapSFTwithDEX() public {
         /*
         struct Trade {
             uint256 amountIn;
@@ -141,5 +156,40 @@ contract DeploySFT is Script {
         console.log("safeswapRouterProxy1:", address(safeswapRouterProxy1));
         console.log("factory : " , safeswapRouterProxy1.factory());
         console.log("safeswapPair : " , address(safeswapPair));
+    }
+
+    function transfertest() public {
+
+        console.log("before transfer safeMoon owner bal :" , safeMoon.balanceOf(owner));
+        console.log("before transfer safeMoon A bal :" , safeMoon.balanceOf(accountA));
+        console.log("before transfer safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("before transfer safeMoon C bal :" , safeMoon.balanceOf(accountC));
+
+        console.log("before transfer safeMoon commission bal :" , safeMoon.balanceOf(feeseter));
+        
+        
+        vm.startBroadcast(pvk_C);
+        safeMoon.transfer(accountB, 1000 * 10 ** 9);
+        vm.stopBroadcast();
+
+        console.log("after transfer safeMoon owner bal :" , safeMoon.balanceOf(owner));
+        console.log("after transfer safeMoon A bal :" , safeMoon.balanceOf(accountA));
+        console.log("after transfer safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("after transfer safeMoon C bal :" , safeMoon.balanceOf(accountC));
+
+        console.log("after transfer safeMoon commission bal :" , safeMoon.balanceOf(feeseter));
+        
+
+    }
+    
+    function run() public {
+        setupContract();
+
+        transfertest();
+
+        // addLiquidity();
+
+
+        // console.log()
     }
 }
