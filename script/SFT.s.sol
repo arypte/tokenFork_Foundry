@@ -38,9 +38,14 @@ contract DeploySFT is Script {
     FeeJar public feeJar;
     address public WETH = 0x4200000000000000000000000000000000000006;
 
-    function setupContract() public { 
+    function setupContract() public {
 
-         vm.startBroadcast(pvk_Owner);
+        vm.deal((accountA), 1000 ether);
+        vm.deal((accountB), 1000 ether);
+        vm.deal((accountC), 1000 ether);
+        vm.deal((owner), 1000 ether); 
+
+        vm.startBroadcast(pvk_Owner);
 
         safeMoon = new Safemoon();
         // safeMoon 초기화
@@ -75,9 +80,9 @@ contract DeploySFT is Script {
             address(owner),  // _lpFeeCollector
             address(safeswapFactory),  // _factory
             10000,                                      // _maxPercentage (100%)
-            100,                                        // _buyBackAndBurnFee (1%)
-            100,                                         // _lpFee (0.5%)
-            100                                          // _supportFee (0.5%)
+            0,                                        // _buyBackAndBurnFee (1%)
+            0,                                         // _lpFee (0.5%)
+            0                                          // _supportFee (0.5%)
         );
 
         safeSwapTradeRouter = new SafeSwapTradeRouter();
@@ -95,6 +100,7 @@ contract DeploySFT is Script {
         safeMoon.mint(accountB, 20000 * 10 ** 9); // B 계정에 2000 토큰 민팅
         safeMoon.mint(accountC, 30000 * 10 ** 9); // B 계정에 2000 토큰 민팅
         safeMoon.mint(feeseter, 30000 * 10 ** 9); // B 계정에 2000 토큰 민팅
+        safeMoon.whitelistAddress(address(safeSwapTradeRouter), 1);
 
         vm.stopBroadcast();
 
@@ -104,7 +110,7 @@ contract DeploySFT is Script {
     }
 
     function addLiquidity() public {
-        vm.startBroadcast(pvk_A);        
+        vm.startBroadcast(owner);
         safeMoon.approve(address(safeswapRouterProxy1), 5000 * 10 ** 9);
         safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(address(safeMoon), 5000 * 10 ** 9,0,0,accountA,0);
         vm.stopBroadcast();
@@ -187,7 +193,7 @@ contract DeploySFT is Script {
 
         transfertest();
 
-        // addLiquidity();
+        addLiquidity();
 
 
         // console.log()
