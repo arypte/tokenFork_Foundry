@@ -37,13 +37,10 @@ contract DeploySFT is Script {
     SafeSwapTradeRouter public safeSwapTradeRouter;
     FeeJar public feeJar;
     address public WETH = 0x4200000000000000000000000000000000000006;
+    uint256 decimal;
+    ISafeswapERC20 v2pair;
 
-    function setupContract() public {
-
-        vm.deal((accountA), 1000 ether);
-        vm.deal((accountB), 1000 ether);
-        vm.deal((accountC), 1000 ether);
-        vm.deal((owner), 1000 ether); 
+    function setupContract() public { 
 
         vm.startBroadcast(pvk_Owner);
 
@@ -52,6 +49,7 @@ contract DeploySFT is Script {
         //! 테스트를 위해 기존 코드 수정 __Safemoon_tiers_init
         //!  excludeFromReward -> require(!_isExcluded[account], "Invalid"); 제거
         safeMoon.initialize();
+        decimal = 10 ** safeMoon.decimals();
 
         safeswapPair = new SafeswapPair();
         safeswapFactory = new SafeswapFactory();
@@ -71,7 +69,7 @@ contract DeploySFT is Script {
         safeMoon.setWhitelistMintBurn(owner, true);
         safeMoon.setBridgeBurnAddress(owner);
 
-        //! FeeJar 확인
+        //! FeeJar 확인 수수료체크
         feeJar = new FeeJar();
         feeJar.initialize(
             address(owner),  // _feeJarAdmin
@@ -79,14 +77,16 @@ contract DeploySFT is Script {
             address(owner),  // _buyBackAndBurnFeeCollector
             address(owner),  // _lpFeeCollector
             address(safeswapFactory),  // _factory
-            10000,                                      // _maxPercentage (100%)
-            0,                                        // _buyBackAndBurnFee (1%)
-            0,                                         // _lpFee (0.5%)
-            0                                          // _supportFee (0.5%)
+            10000,                                   // _maxPercentage (100%)
+            0,                                       // _buyBackAndBurnFee (1%)
+            0,                                       // _lpFee (0.5%)
+            0                                        // _supportFee (0.5%)
         );
 
         safeSwapTradeRouter = new SafeSwapTradeRouter();
-        safeSwapTradeRouter.initialize(address(feeJar), address(safeswapRouterProxy1), 10, 100);
+        
+        //! DexFee 체크
+        safeSwapTradeRouter.initialize(address(feeJar), address(safeswapRouterProxy1), 0, 100);
 
         safeswapRouterProxy1.setRouterTrade(address(safeSwapTradeRouter));
 
@@ -96,34 +96,35 @@ contract DeploySFT is Script {
 
         safeMoon.initRouterAndPair(address(safeswapRouterProxy1));
         
-        safeMoon.mint(accountA, 10000 * 10 ** 9); // A 계정에 1000 토큰 민팅
-        safeMoon.mint(accountB, 20000 * 10 ** 9); // B 계정에 2000 토큰 민팅
-        safeMoon.mint(accountC, 30000 * 10 ** 9); // B 계정에 2000 토큰 민팅
-        safeMoon.mint(feeseter, 30000 * 10 ** 9); // B 계정에 2000 토큰 민팅
+        // safeMoon.mint(accountA, 1000000 * 10**6 * decimal); // A 계정에 토큰 전체 민팅
         safeMoon.whitelistAddress(address(safeSwapTradeRouter), 1);
 
         vm.stopBroadcast();
 
+        console.log("Owner:", owner);
+        console.log("SFT:", address(safeMoon));
+        console.log("safeswapRouterProxy1:", address(safeswapRouterProxy1));
+        console.log("factory : " , safeswapRouterProxy1.factory());
+        console.log("safeswapPair : " , address(safeswapPair), "\n\n");
+
         console.log("setup safeMoon A bal :" , safeMoon.balanceOf(accountA));
-        console.log("setup safeMoon B bal :" , safeMoon.balanceOf(accountB));
-        console.log("setup safeMoon C bal :" , safeMoon.balanceOf(accountC));
+        console.log("setup safeMoon owner bal :" , safeMoon.balanceOf(owner));
     }
 
     function addLiquidity() public {
-        vm.startBroadcast(owner);
-        safeMoon.approve(address(safeswapRouterProxy1), 5000 * 10 ** 9);
-        safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(address(safeMoon), 5000 * 10 ** 9,0,0,accountA,0);
+
+        //! 모든 토큰을 1이더로 lp 제공
+        // vm.startBroadcast(p);
+        vm.startBroadcast(pvk_Owner);
+        safeMoon.approve(address(safeswapRouterProxy1), 1000000 * 10**6 * decimal);
+        safeswapRouterProxy1.addLiquidityETH{value: 1 ether}(address(safeMoon), 1000000 * 10 ** 6 * decimal,0,0,owner,0);
         vm.stopBroadcast();
 
         address pairAddr = safeswapFactory.getPair(address(safeMoon),WETH);
-        ISafeswapERC20 v2pair = ISafeswapERC20(pairAddr);
+        v2pair = ISafeswapERC20(pairAddr);
 
-
-        console.log("after adLq safeMoon A bal :" , safeMoon.balanceOf(accountA));
-        console.log("after adLq safeMoon B bal :" , safeMoon.balanceOf(accountB));
-        console.log("afeer adLq safeMoon C bal :" , safeMoon.balanceOf(accountC));
-
-        console.log("After LP AddLiquidity safeMoon C bal :" , safeMoon.balanceOf(accountC));
+        console.log("After AddLiquidity safeMoon owner bal :" , safeMoon.balanceOf(owner), "\n");
+        console.log("After AddLiquidity lp owner bal :" , v2pair.balanceOf(owner), "\n");
     }
 
     function swapSFTwithDEX() public {
@@ -138,10 +139,34 @@ contract DeploySFT is Script {
         */
         
         SafeSwapTradeRouter.Trade memory temp;
-        temp.amountIn = 1000 * 10 ** 9;
-        temp.amountOut = 1 * 10 ** 17;
+        temp.amountIn = 1 * 10 ** 17;
+        temp.amountOut = 0;
         
         address[] memory temp2 = new address[](2);
+        temp2[1] = address(safeMoon);
+        temp2[0] = WETH;
+        temp.path = temp2;
+
+        temp.to = payable(accountB);
+        temp.deadline = block.timestamp + 1000 ;
+
+        console.log("Before Trade safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("Before Trade ETH B bal :" , accountB.balance , "\n");
+
+        vm.startBroadcast(pvk_B);
+        //! approve safeswapRouterProxy1   , safeSwapTradeRouter 아님
+        safeMoon.approve(address(safeswapRouterProxy1), 2000 * decimal);
+        // safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{value: 0.1 ether}(temp);
+        safeSwapTradeRouter.swapExactETHForTokensWithFeeAmount{value: 0.1 ether}(temp, 0);
+        // swapExactETHForTokensWithFeeAmount(Trade memory trade, uint256 _feeAmount);
+        vm.stopBroadcast();
+
+        console.log("After Trade safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("after Trade ETH B bal :" , accountB.balance, "\n");
+
+        temp.amountIn = safeMoon.balanceOf(accountB);
+        temp.amountOut = 0;
+        
         temp2[0] = address(safeMoon);
         temp2[1] = WETH;
         temp.path = temp2;
@@ -151,17 +176,14 @@ contract DeploySFT is Script {
 
         vm.startBroadcast(pvk_B);
         //! approve safeswapRouterProxy1   , safeSwapTradeRouter 아님
-        safeMoon.approve(address(safeswapRouterProxy1), 2000 * 10 ** 9);
-        safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{value: 1 ether}(temp);
+        safeMoon.approve(address(safeswapRouterProxy1), safeMoon.balanceOf(accountB));
+        safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{value: 0.1 ether}(temp);
+        // safeSwapTradeRouter.swapExactETHForTokensWithFeeAmount{value: 0.11 ether}(temp, 1 * 10 ** 16);
+        // swapExactETHForTokensWithFeeAmount(Trade memory trade, uint256 _feeAmount);
         vm.stopBroadcast();
 
-        console.log("After Trade safeMoon C bal :" , safeMoon.balanceOf(accountC));
-
-        console.log("Owner:", owner);
-        console.log("SFT:", address(safeMoon));
-        console.log("safeswapRouterProxy1:", address(safeswapRouterProxy1));
-        console.log("factory : " , safeswapRouterProxy1.factory());
-        console.log("safeswapPair : " , address(safeswapPair));
+        console.log("After2 Trade safeMoon B bal :" , safeMoon.balanceOf(accountB));
+        console.log("after2 Trade ETH B bal :" , accountB.balance ,"\n\n");
     }
 
     function transfertest() public {
@@ -175,7 +197,7 @@ contract DeploySFT is Script {
         
         
         vm.startBroadcast(pvk_C);
-        safeMoon.transfer(accountB, 1000 * 10 ** 9);
+        safeMoon.transfer(accountB, 1000 * decimal);
         vm.stopBroadcast();
 
         console.log("after transfer safeMoon owner bal :" , safeMoon.balanceOf(owner));
@@ -191,10 +213,11 @@ contract DeploySFT is Script {
     function run() public {
         setupContract();
 
-        transfertest();
-
         addLiquidity();
 
+        swapSFTwithDEX();
+
+        // transfertest();
 
         // console.log()
     }
