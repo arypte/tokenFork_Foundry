@@ -217,10 +217,10 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
 
     // 
     function __Safemoon_tiers_init() internal initializer {
-        // _defaultFees = _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
-        // _addTier(250, 0, 250, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
         _defaultFees = _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
-        _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
+        _addTier(250, 0, 250, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
+        // _defaultFees = _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
+        // _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
     }
 
     function name() public view returns (string memory) {
