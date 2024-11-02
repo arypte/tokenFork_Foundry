@@ -45,7 +45,7 @@ contract DeploySFT is Script {
         vm.startBroadcast(pvk_Owner);
 
         safeMoon = new Safemoon();
-        // safeMoon 초기화
+        //! safeMoon 초기화 -> 매수 매도시 2.5% TAX , 2.5%는 LP 제공 + 번을 위해 feeSetter로 전송
         //! 테스트를 위해 기존 코드 수정 __Safemoon_tiers_init
         //!  excludeFromReward -> require(!_isExcluded[account], "Invalid"); 제거
         safeMoon.initialize();
@@ -85,7 +85,7 @@ contract DeploySFT is Script {
 
         safeSwapTradeRouter = new SafeSwapTradeRouter();
         
-        //! DexFee 체크
+        //! DexFee 체크(테스트를 위해 수수료 0%)
         safeSwapTradeRouter.initialize(address(feeJar), address(safeswapRouterProxy1), 0, 100);
 
         safeswapRouterProxy1.setRouterTrade(address(safeSwapTradeRouter));
@@ -96,6 +96,7 @@ contract DeploySFT is Script {
 
         safeMoon.initRouterAndPair(address(safeswapRouterProxy1));
         
+        //! 덱스 FeeTier1 등록
         safeMoon.whitelistAddress(address(safeSwapTradeRouter), 1);
 
         vm.stopBroadcast();
