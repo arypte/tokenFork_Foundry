@@ -230,21 +230,28 @@ contract DeploySFT is Script {
 
         console.log("after transfer safeMoon commission bal :" , safeMoon.balanceOf(feeseter));
 
+        // console.log(safeMoon._defaultFees());
+
+
     }
     
     function run() public {
 
         // ERC20 초기 세팅, 수수료, 물량 등
         setupContract();
+        console.log("1 commision fee" , safeMoon.balanceOf(feeseter));
 
         // DEX 유동성 제공(owner 물량 + 1이더 Lp 생성)
         addLiquidity();
+        console.log("2 commision fee" , safeMoon.balanceOf(feeseter));
 
         // DEX 통해서 유저 A , B 가 밈코 구매
         buySFTwithDEX();
+        console.log("3 commision fee" , safeMoon.balanceOf(feeseter));
 
         // DEX 통해서 유저 B가 매도, A 잔고 증가 확인
         sellSFTwithDEX();
+        console.log("4 commision fee" , safeMoon.balanceOf(feeseter));
 
         // transfertest();
 
