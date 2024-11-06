@@ -9,13 +9,15 @@ contract SFT is TestSetup {
         _testSetup();
     }
 
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
     //! testfail , test_fail 차이
     function test_failaddLq() public {
     
         vm.startPrank(accountA);
-        vm.expectRevert("TransferHelper::transferFrom: transferFrom failed");
-        safeMoon.approve(address(safeswapRouterProxy1), 5000 * SFT_DECIMAL);
 
+        safeMoon.approve(address(safeswapRouterProxy1), 5000 * SFT_DECIMAL);
+        vm.expectRevert("TransferHelper::transferFrom: transferFrom failed");
         safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(
             address(safeMoon),      // token
             50000 * SFT_DECIMAL,    // amountTokenDesired
@@ -57,10 +59,15 @@ contract SFT is TestSetup {
         });
 
         uint256 accountCBalanceBefore = safeMoon.balanceOf(accountC);
-
         /* AccountB 판매 */
+        // emit Withdrawal(param0: safeswapRouterProxy1: [0x429c4C080BbC9E19BBC64c85AE2a14641C5e8163], param1: 831943981344921494 [8.319e17])
+
         vm.startPrank(accountB);
+
+        vm.expectEmit(address(safeMoon));
+        emit Approval(accountB, address(safeswapRouterProxy1), 1000 * SFT_DECIMAL);
         safeMoon.approve(address(safeswapRouterProxy1), 1000 * SFT_DECIMAL);
+
         safeSwapTradeRouter.swapExactTokensForETHAndFeeAmount{value: 1 ether}(tradeParam);
         vm.stopPrank();
 

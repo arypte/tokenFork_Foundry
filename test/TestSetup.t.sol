@@ -213,4 +213,14 @@ contract TestSetup is Test {
         assertEq(safeMoon.balanceOf(accountB), 20000 * SFT_DECIMAL, "Balance Error");
         assertEq(safeMoon.balanceOf(accountC), 30000 * SFT_DECIMAL, "Balance Error");
     }
+
+    function _printAddress() internal{
+        console.log("Owner:", owner);
+        console.log("SFT:", address(safeMoon));
+        console.log("safeswapRouterProxy1:", address(safeswapRouterProxy1));
+        console.log("factory : " , safeswapRouterProxy1.factory());
+        console.log("A : " , accountA);
+        console.log("B : " , accountB);
+        console.log("C : " , accountC);
+    }
 }
