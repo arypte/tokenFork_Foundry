@@ -78,6 +78,7 @@ contract TestSetup is Test {
         accountB = makeAddr("accountB");
         accountC = makeAddr("accountC");
 
+        //! Native, Token Balance 설정
         vm.deal(accountA, INITIAL_BALANCE);
         vm.deal(accountB, INITIAL_BALANCE);
         vm.deal(accountC, INITIAL_BALANCE);
@@ -85,6 +86,7 @@ contract TestSetup is Test {
         // ERC20 USDC = ERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
         // deal(address(USDC), accountA, 100 * 10 ** ERC20(USDC).decimals());
 
+        //! 주소 라벨링
         vm.label(accountA, "accountA");
         vm.label(accountB, "accountB");
         vm.label(accountC, "accountC");

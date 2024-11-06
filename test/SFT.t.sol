@@ -9,16 +9,16 @@ contract SFT is TestSetup {
         _testSetup();
     }
 
+    //! testfail , test_fail 차이
     function test_failaddLq() public {
-
+    
         vm.startPrank(accountA);
         vm.expectRevert("TransferHelper::transferFrom: transferFrom failed");
-
         safeMoon.approve(address(safeswapRouterProxy1), 5000 * SFT_DECIMAL);
 
         safeswapRouterProxy1.addLiquidityETH{value: 5 ether}(
             address(safeMoon),      // token
-            50000 * SFT_DECIMAL,     // amountTokenDesired
+            50000 * SFT_DECIMAL,    // amountTokenDesired
             0,                      // amountTokenMin
             0,                      // amountETHMin
             accountA,               // to
@@ -69,7 +69,3 @@ contract SFT is TestSetup {
     }
 
 }
-        // bytes4 selector = bytes4(keccak256("OwnableUnauthorizedAccount(address)"));
-        // vm.expectRevert(abi.encodeWithSelector(selector, address(0)));
-        // saleContract.setSwitch(true);
-        // assertEq(saleContract.killSwitch(), false);
