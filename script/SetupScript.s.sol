@@ -8,13 +8,11 @@ import { SafeswapRouterProxy2 } from "../src/implmentation/SafeswapRouterProxy2.
 import { FeeJar } from "../src/implmentation/FeeJar.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
-
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Script, console } from "forge-std/Script.sol";
 
-contract TestSetup is Script {
+contract SetupScript is Script {
     
-    uint256 constant INITIAL_BALANCE = 1000e18; // 1000 ETH
     uint256 constant SFT_DECIMAL = 1e9;
 
     /* Impl */
@@ -65,7 +63,7 @@ contract TestSetup is Script {
 
     function _testSetup() internal {
         // 각 계정들 설정
-        _setupUsers();
+        // _setupUsers();
 
         // 컨트랙트 배포 (Impl, Proxy)
         _deployContracts();
@@ -169,15 +167,16 @@ contract TestSetup is Script {
         safeswapRouterProxy1.setWhitelist(address(safeSwapTradeRouter),true);
 
         safeMoon.initRouterAndPair(address(safeswapRouterProxy1));
-        vm.stopBroadcast();
+        vm.stopBroadcast(); 
 
-        console.log("Owner:", owner);
-        console.log("SFT:", address(safeMoon));
-        console.log("safeswapRouterProxy1:", address(safeswapRouterProxy1));
-        console.log("factory : " , safeswapRouterProxy1.factory());
-        console.log("A : " , accountA);
-        console.log("B : " , accountB);
-        console.log("C : " , accountC);
+        console.log("Owner :", owner);
+        console.log("SFT :", address(safeMoon));
+        console.log("safeswapRouterProxy1 :", address(safeswapRouterProxy1));
+        console.log("safeSwapTradeRouter :", address(safeSwapTradeRouter));
+        console.log("factory :" , safeswapRouterProxy1.factory());
+        console.log("A :" , accountA);
+        console.log("B :" , accountB);
+        console.log("C :" , accountC);
     }
 
 }

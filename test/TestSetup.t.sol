@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.11;
 
-import {Test, console} from "forge-std/Test.sol";
+import { Test, console } from "forge-std/Test.sol";
+
 import { Safemoon } from "../src/implmentation/Safemoon.sol";
 import { SafeswapFactory, SafeswapPair } from "../src/implmentation/SafeswapFactory.sol";
 import { SafeswapRouterProxy1 } from "../src/implmentation/SafeswapRouterProxy1.sol";
@@ -9,7 +10,9 @@ import { SafeswapRouterProxy2 } from "../src/implmentation/SafeswapRouterProxy2.
 import { FeeJar } from "../src/implmentation/FeeJar.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
+import { SFTERC1967Proxy } from "../src/SafeMoonProxy.sol";
 
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TestSetup is Test {
@@ -46,7 +49,6 @@ contract TestSetup is Test {
 
     /* Base Contracts */
     address public WETH = 0x4200000000000000000000000000000000000006; // base weth
-    // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
 
     struct Trade {
         uint256 amountIn;
@@ -66,7 +68,8 @@ contract TestSetup is Test {
         // 컨트랙트 config 설정
         _initializeAndSetConfigs();
 
-        _fundSFT();
+        // 계정 별 토큰 민트
+        _initialmintSFT();
     }
 
     function _setupUsers() internal {
@@ -78,6 +81,9 @@ contract TestSetup is Test {
         vm.deal(accountA, INITIAL_BALANCE);
         vm.deal(accountB, INITIAL_BALANCE);
         vm.deal(accountC, INITIAL_BALANCE);
+        // TODO : 발표전에 한번더 테스트
+        // ERC20 USDC = ERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+        // deal(address(USDC), accountA, 100 * 10 ** ERC20(USDC).decimals());
 
         vm.label(accountA, "accountA");
         vm.label(accountB, "accountB");
@@ -109,16 +115,20 @@ contract TestSetup is Test {
         safeSwapTradeRouterImpl = address(new SafeSwapTradeRouter());
         feeJarImpl = address(new FeeJar());
 
-
         /* Deploy Proxy */
-        safeMoon = Safemoon(payable(address(new ERC1967Proxy(safeMoonImpl, ""))));
-        safeswapFactory = SafeswapFactory(payable(address(new ERC1967Proxy(safeswapFactoryImpl, ""))));
-        // safeswapPair = SafeswapPair(payable(address(new ERC1967Proxy(safeswapPairImpl, ""))));
+        safeMoon = Safemoon(payable(address(new SFTERC1967Proxy(safeMoonImpl, ""))));
+        safeswapFactory = SafeswapFactory(payable(address(new SFTERC1967Proxy(safeswapFactoryImpl, ""))));
         safeswapPair = SafeswapPair(safeswapPairImpl);
-        safeswapRouterProxy1 = SafeswapRouterProxy1(payable(address(new ERC1967Proxy(safeswapRouterProxy1Impl, ""))));
-        safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new ERC1967Proxy(safeswapRouterProxy2Impl, ""))));
-        safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new ERC1967Proxy(safeSwapTradeRouterImpl, ""))));
-        feeJar = FeeJar(payable(address(new ERC1967Proxy(feeJarImpl, ""))));
+        safeswapRouterProxy1 = SafeswapRouterProxy1(payable(address(new SFTERC1967Proxy(safeswapRouterProxy1Impl, ""))));
+        safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new SFTERC1967Proxy(safeswapRouterProxy2Impl, ""))));
+        safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new SFTERC1967Proxy(safeSwapTradeRouterImpl, ""))));
+        feeJar = FeeJar(payable(address(new SFTERC1967Proxy(feeJarImpl, ""))));
+
+        assertEq(SFTERC1967Proxy(payable(address(safeMoon))).getImplementation(), safeMoonImpl, "safeMoon Impl Not Correct");
+        assertEq(SFTERC1967Proxy(payable(address(safeswapRouterProxy1))).getImplementation(), safeswapRouterProxy1Impl, "safeswapRouterProxy1 Impl Not Correct");
+        assertEq(SFTERC1967Proxy(payable(address(safeswapRouterProxy2))).getImplementation(), safeswapRouterProxy2Impl, "safeswapRouterProxy2 Impl Not Correct");
+        assertEq(SFTERC1967Proxy(payable(address(safeSwapTradeRouter))).getImplementation(), safeSwapTradeRouterImpl, "safeSwapTradeRouter Impl Not Correct");
+        assertEq(SFTERC1967Proxy(payable(address(feeJar))).getImplementation(), feeJarImpl, "feeJar Impl Not Correct");
 
         vm.label(address(safeMoon), "safeMoon");
         vm.label(address(safeswapFactory), "safeswapFactory");
@@ -132,16 +142,21 @@ contract TestSetup is Test {
     }
 
     function _initializeAndSetConfigs() internal {
-        vm.startPrank(owner);
+        vm.startPrank(owner); // owner로 행동을 시뮬레이션
 
         /* SafeMoon */
         safeMoon.initialize();
         safeMoon.setWhitelistMintBurn(owner, true);
         safeMoon.setBridgeBurnAddress(owner);
-        assertEq(safeMoon.owner(), owner, "SafeMoon: owner is not owner");
+
+        /* SafeMoon Error */
+        assertEq(safeMoon.name(), "SafeMoon", "Token Name Error");
+        assertEq(safeMoon.symbol(), "SFM", "Token Symbol Error");
+        assertEq(safeMoon.decimals(), 9, "Token Decimal Error");
+        assertEq(safeMoon.owner(), owner, "Token Owner Error");
 
         /* SafeswapRouterProxy1 */
-        safeswapRouterProxy1.initialize(address(safeswapFactory), WETH); // TODO: impl인지 proxy인지 확인
+        safeswapRouterProxy1.initialize(address(safeswapFactory), WETH);
         
         /* SafeswapFactory */
         safeswapFactory.initialize(owner, owner); // feeTo, feeToSetter
@@ -152,19 +167,20 @@ contract TestSetup is Test {
 
         /* FeeJar */
         feeJar.initialize(
-            address(owner),            // _feeJarowner
+            address(owner),            // _feeJarOwner
             address(owner),            // _feeSetter
             address(owner),            // _buyBackAndBurnFeeCollector
             address(owner),            // _lpFeeCollector
             address(safeswapFactory),  // _factory
             10000,                     // _maxPercentage (100%)
             100,                       // _buyBackAndBurnFee (1%)
-            100,                       // _lpFee (0.5%)
-            100                        // _supportFee (0.5%)
+            50,                       // _lpFee (0.5%)
+            50                        // _supportFee (0.5%)
         );
 
         /* SafeSwapTradeRouter */
-        safeSwapTradeRouter.initialize(address(feeJar), address(safeswapRouterProxy1), 10, 100);
+        // DexFee : 0%
+        safeSwapTradeRouter.initialize(address(feeJar), address(safeswapRouterProxy1), 0, 100);
         
         /* SafeswapRouterProxy1 */
         safeswapRouterProxy1.setRouterTrade(address(safeSwapTradeRouter));
@@ -183,12 +199,16 @@ contract TestSetup is Test {
         console.log("C : " , accountC);
     }
 
-    function _fundSFT() internal {
+    function _initialmintSFT() internal {
         // owner 계정에서 민팅
         vm.startPrank(owner); // owner로 행동을 시뮬레이션
         safeMoon.mint(accountA, 10000 * SFT_DECIMAL); // A 계정에 10000 토큰 민팅
         safeMoon.mint(accountB, 20000 * SFT_DECIMAL); // B 계정에 20000 토큰 민팅
         safeMoon.mint(accountC, 30000 * SFT_DECIMAL); // B 계정에 30000 토큰 민팅
         vm.stopPrank();
+
+        assertEq(safeMoon.balanceOf(accountA), 10000 * SFT_DECIMAL, "Balance Error");
+        assertEq(safeMoon.balanceOf(accountB), 20000 * SFT_DECIMAL, "Balance Error");
+        assertEq(safeMoon.balanceOf(accountC), 30000 * SFT_DECIMAL, "Balance Error");
     }
 }
