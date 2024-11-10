@@ -73,12 +73,12 @@ contract UpgradeTest is TestSetup {
         ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(address(feeJar)), feeJarImplNew);
 
         /* Check Impl */
-        assertEq(ITransparentUpgradeableProxy(address(safeMoon)).implementation(), safeMoonImplNew, "safeMoon implementation is not new");
-        assertEq(ITransparentUpgradeableProxy(address(safeswapFactory)).implementation(), safeswapFactoryImplNew, "safeswapFactory implementation is not new");
-        assertEq(ITransparentUpgradeableProxy(address(safeswapRouterProxy1)).implementation(), safeswapRouterProxy1ImplNew, "safeswapRouterProxy1 implementation is not new");
-        assertEq(ITransparentUpgradeableProxy(address(safeswapRouterProxy2)).implementation(), safeswapRouterProxy2ImplNew, "safeswapRouterProxy2 implementation is not new");
-        assertEq(ITransparentUpgradeableProxy(address(safeSwapTradeRouter)).implementation(), safeSwapTradeRouterImplNew, "safeSwapTradeRouter implementation is not new");
-        assertEq(ITransparentUpgradeableProxy(address(feeJar)).implementation(), feeJarImplNew, "feeJar implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeMoon))), safeMoonImplNew, "safeMoon implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeswapFactory))), safeswapFactoryImplNew, "safeswapFactory implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeswapRouterProxy1))), safeswapRouterProxy1ImplNew, "safeswapRouterProxy1 implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeswapRouterProxy2))), safeswapRouterProxy2ImplNew, "safeswapRouterProxy2 implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeSwapTradeRouter))), safeSwapTradeRouterImplNew, "safeSwapTradeRouter implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(feeJar))), feeJarImplNew, "feeJar implementation is not new");
 
         vm.stopPrank();
     }
