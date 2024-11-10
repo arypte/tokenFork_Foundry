@@ -10,11 +10,16 @@ import { FeeJar } from "../src/implmentation/FeeJar.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
 
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
 
 contract TestSetup is Test {
     uint256 constant INITIAL_BALANCE = 1000e18; // 1000 ETH
     uint256 constant SFT_DECIMAL = 1e9;
+
+    /* Proxy Admin */
+    address public proxyAdmin;
 
     /* Impl */
     address public safeMoonImpl;
@@ -100,6 +105,9 @@ contract TestSetup is Test {
     function _deployContracts() internal {
         vm.startPrank(owner);
 
+        /* Deplpoy Proxy Admin */
+        proxyAdmin = address(new ProxyAdmin());
+
         /* Deploy Impl */
         safeMoonImpl = address(new Safemoon());
         safeswapFactoryImpl = address(new SafeswapFactory());
@@ -109,16 +117,17 @@ contract TestSetup is Test {
         safeSwapTradeRouterImpl = address(new SafeSwapTradeRouter());
         feeJarImpl = address(new FeeJar());
 
-
         /* Deploy Proxy */
-        safeMoon = Safemoon(payable(address(new ERC1967Proxy(safeMoonImpl, ""))));
-        safeswapFactory = SafeswapFactory(payable(address(new ERC1967Proxy(safeswapFactoryImpl, ""))));
+        safeMoon = Safemoon(payable(address(new TransparentUpgradeableProxy(safeMoonImpl, proxyAdmin, ""))));
+        safeswapFactory = SafeswapFactory(payable(address(new TransparentUpgradeableProxy(safeswapFactoryImpl, proxyAdmin, ""))));
+        
         // safeswapPair = SafeswapPair(payable(address(new ERC1967Proxy(safeswapPairImpl, ""))));
         safeswapPair = SafeswapPair(safeswapPairImpl);
-        safeswapRouterProxy1 = SafeswapRouterProxy1(payable(address(new ERC1967Proxy(safeswapRouterProxy1Impl, ""))));
-        safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new ERC1967Proxy(safeswapRouterProxy2Impl, ""))));
-        safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new ERC1967Proxy(safeSwapTradeRouterImpl, ""))));
-        feeJar = FeeJar(payable(address(new ERC1967Proxy(feeJarImpl, ""))));
+
+        safeswapRouterProxy1 = SafeswapRouterProxy1(payable(address(new TransparentUpgradeableProxy(safeswapRouterProxy1Impl, proxyAdmin, ""))));
+        safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new TransparentUpgradeableProxy(safeswapRouterProxy2Impl, proxyAdmin, ""))));
+        safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new TransparentUpgradeableProxy(safeSwapTradeRouterImpl, proxyAdmin, ""))));
+        feeJar = FeeJar(payable(address(new TransparentUpgradeableProxy(feeJarImpl, proxyAdmin, ""))));
 
         vm.label(address(safeMoon), "safeMoon");
         vm.label(address(safeswapFactory), "safeswapFactory");
@@ -191,4 +200,5 @@ contract TestSetup is Test {
         safeMoon.mint(accountC, 30000 * SFT_DECIMAL); // B 계정에 30000 토큰 민팅
         vm.stopPrank();
     }
+
 }

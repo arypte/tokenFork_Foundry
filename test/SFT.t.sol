@@ -25,8 +25,6 @@ contract SFT is TestSetup {
             3. 100 SFT 판매
          */
 
-
-
         // ISafeswapERC20 v2pair = ISafeswapERC20(safeswapFactory.getPair(address(safeMoon), WETH));
 
         /* 

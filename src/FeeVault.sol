@@ -5,17 +5,17 @@ import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ER
 
 import { Initializable } from "./abstract/Initializable.sol";
 
-contract FeeVault is Ownable, Initializable{
+contract FeeVault is Ownable, Initializable {
 
     function initialize() external initializer {
         _transferOwnership(_msgSender());
     }
 
-    function makeAndBurnLp() external onlyOwner(){
+    function makeAndBurnLp() external onlyOwner() {
         _sellSFTwithDEX();
     }
 
-    function ownerCall() external onlyOwner(){
+    function ownerCall() external onlyOwner() {
 
     }
 
