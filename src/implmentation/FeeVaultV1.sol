@@ -7,13 +7,24 @@ import { Initializable } from "../abstract/Initializable.sol";
 
 contract FeeVaultV1 is Ownable, Initializable {
 
-    address constant TokenAddr = address(0); 
+    address tokenAddr;
 
     receive() external payable virtual {
     }
 
-    function initialize() external initializer {
+    function initialize(address _addr) external initializer {
         _transferOwnership(_msgSender());
+        tokenAddr = _addr;
+    }
+
+    function withdrawToken(uint256 amount) external onlyOwner() {
+        require(ERC20Burnable(tokenAddr).balanceOf(address(this)) >= amount, "Not enough Balance");
+        ERC20Burnable(tokenAddr).transfer(_msgSender(), amount);
+    }
+
+    function withdrawNative(uint256 amount) external onlyOwner() {
+        require(address(this).balance >= amount, "Not enough Balance");
+        payable(_msgSender()).transfer(amount); 
     }
 
     // function makeAndBurnLp() external onlyOwner() {
@@ -32,10 +43,5 @@ contract FeeVaultV1 is Ownable, Initializable {
     // function _burnLpToken() internal {
         
     // }
-
-    function withdrawToken(uint256 amount) external onlyOwner() {
-        require(ERC20Burnable(TokenAddr).balanceOf(address(this)) >= amount, "Not enough Balance");
-        ERC20Burnable(TokenAddr).transfer(_msgSender(), amount);
-    }
 
 }

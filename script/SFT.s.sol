@@ -15,6 +15,29 @@ contract DeploySFT is TestSetup {
 
     ISafeswapERC20 v2pair;
 
+    function run() public {
+
+        // ERC20 초기 세팅, 수수료, 물량 등
+        _testSetup();
+        console.log("1 commision fee" , safeMoon.balanceOf(address(feeVault)));
+
+        // DEX 유동성 제공(owner 물량 + 1이더 Lp 생성)
+        addLiquidity();
+        console.log("2 commision fee" , safeMoon.balanceOf(address(feeVault)));
+
+        // DEX 통해서 유저 A , B 가 밈코 구매
+        buySFTwithDEX();
+        console.log("3 commision fee" , safeMoon.balanceOf(address(feeVault)));
+
+        // DEX 통해서 유저 B가 매도, A 잔고 증가 확인
+        sellSFTwithDEX();
+        console.log("4 commision fee" , safeMoon.balanceOf(address(feeVault)));
+
+        // transfertest();
+
+        feeWithdraw();
+    }
+
     function addLiquidity() public {
 
         //! 모든 토큰을 1이더로 lp 제공
@@ -121,7 +144,7 @@ contract DeploySFT is TestSetup {
         console.log("before transfer safeMoon B bal :" , safeMoon.balanceOf(accountB));
         console.log("before transfer safeMoon C bal :" , safeMoon.balanceOf(accountC));
 
-        console.log("before transfer safeMoon commission bal :" , safeMoon.balanceOf(feeseter));
+        console.log("before transfer safeMoon commission bal :" , safeMoon.balanceOf(address(feeVault)));
         
         vm.startBroadcast(pvk_B);
         safeMoon.transfer(accountC, 1000 * SFT_DECIMAL);
@@ -132,33 +155,23 @@ contract DeploySFT is TestSetup {
         console.log("after transfer safeMoon B bal :" , safeMoon.balanceOf(accountB));
         console.log("after transfer safeMoon C bal :" , safeMoon.balanceOf(accountC));
 
-        console.log("after transfer safeMoon commission bal :" , safeMoon.balanceOf(feeseter));
+        console.log("after transfer safeMoon commission bal :" , safeMoon.balanceOf(address(feeVault)));
 
         // console.log(safeMoon._defaultFees());
-
-
     }
-    
-    function run() public {
 
-        // ERC20 초기 세팅, 수수료, 물량 등
-        _testSetup();
-        console.log("1 commision fee" , safeMoon.balanceOf(feeseter));
+    function feeWithdraw() public{
 
-        // DEX 유동성 제공(owner 물량 + 1이더 Lp 생성)
-        addLiquidity();
-        console.log("2 commision fee" , safeMoon.balanceOf(feeseter));
+        vm.startBroadcast(pvk_Owner);
 
-        // DEX 통해서 유저 A , B 가 밈코 구매
-        buySFTwithDEX();
-        console.log("3 commision fee" , safeMoon.balanceOf(feeseter));
+        console.log("before transfer owner balane" , safeMoon.balanceOf(owner));
 
-        // DEX 통해서 유저 B가 매도, A 잔고 증가 확인
-        sellSFTwithDEX();
-        console.log("4 commision fee" , safeMoon.balanceOf(feeseter));
+        feeVault.withdrawToken(safeMoon.balanceOf(address(feeVault)));
 
-        // transfertest();
+        console.log("after transfer owner balane" , safeMoon.balanceOf(owner));
 
-        // console.log()
+        vm.stopBroadcast();
+        
     }
+
 }

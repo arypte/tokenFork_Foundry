@@ -176,13 +176,13 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         _;
     }
 
-    function initialize() public initializer {
+    function initialize(address feeTo) public initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
-        __Safemoon_v2_init_unchained();
+        __Safemoon_v2_init_unchained(feeTo);
     }
 
-    function __Safemoon_v2_init_unchained() internal initializer {
+    function __Safemoon_v2_init_unchained(address feeTo) internal initializer {
         _name = "SafeMoon";
         _symbol = "SFM";
         _decimals = 9;
@@ -203,7 +203,7 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         //
-        __Safemoon_tiers_init();
+        __Safemoon_tiers_init(feeTo);
 
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
@@ -216,9 +216,9 @@ contract Safemoon is ISafemoon, Initializable, ContextUpgradeable, OwnableUpgrad
     }
 
     // 
-    function __Safemoon_tiers_init() internal initializer {
-        _defaultFees = _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
-        _addTier(250, 0, 250, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
+    function __Safemoon_tiers_init(address feeTo) internal initializer {
+        _defaultFees = _addTier(0, 0, 0, 0, 0, feeTo, address(0));
+        _addTier(250, 0, 250, 0, 0, feeTo, address(0));
         // _defaultFees = _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
         // _addTier(0, 0, 0, 0, 0, address(0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030), address(0));
     }

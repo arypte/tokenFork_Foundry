@@ -6,16 +6,21 @@ import { SafeswapFactory, SafeswapPair } from "../src/implmentation/SafeswapFact
 import { SafeswapRouterProxy1 } from "../src/implmentation/SafeswapRouterProxy1.sol";
 import { SafeswapRouterProxy2 } from "../src/implmentation/SafeswapRouterProxy2.sol";
 import { FeeJar } from "../src/implmentation/FeeJar.sol";
+import { FeeVaultV1 } from "../src/implmentation/FeeVaultV1.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
 
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { Script, console } from "forge-std/Script.sol";
 
 contract TestSetup is Script {
     
     uint256 constant INITIAL_BALANCE = 1000e18; // 1000 ETH
     uint256 constant SFT_DECIMAL = 1e9;
+
+    /* Proxy Admin */
+    address public proxyAdmin;
 
     /* Impl */
     address public safeMoonImpl;
@@ -25,6 +30,7 @@ contract TestSetup is Script {
     address public safeswapPairImpl;
     address public safeSwapTradeRouterImpl;
     address public feeJarImpl;
+    address public feeVaultV1Impl;
 
     /* Proxy */
     Safemoon public safeMoon;
@@ -34,6 +40,7 @@ contract TestSetup is Script {
     SafeswapPair public safeswapPair;
     SafeSwapTradeRouter public safeSwapTradeRouter;
     FeeJar public feeJar ;
+    FeeVaultV1 public feeVault;
 
     // Load private keys from .env
     uint256 pvk_A = vm.envUint("Pvk_A");
@@ -46,8 +53,7 @@ contract TestSetup is Script {
     address accountB = vm.addr(pvk_B);
     address accountC = vm.addr(pvk_C);
     address owner = vm.addr(pvk_Owner);
-    address feeseter = 0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030;
-    
+
     address public feeToSetter;
     address public feeTo;
 
@@ -93,6 +99,9 @@ contract TestSetup is Script {
         
         vm.startBroadcast(pvk_Owner);
 
+        /* Deplpoy Proxy Admin */
+        proxyAdmin = address(new ProxyAdmin());
+
         /* Deploy Impl */
         safeMoonImpl = address(new Safemoon());
         safeswapFactoryImpl = address(new SafeswapFactory());
@@ -101,17 +110,21 @@ contract TestSetup is Script {
         safeswapRouterProxy2Impl = address(new SafeswapRouterProxy2());
         safeSwapTradeRouterImpl = address(new SafeSwapTradeRouter());
         feeJarImpl = address(new FeeJar());
-
+        feeVaultV1Impl = address(new FeeVaultV1());
 
         /* Deploy Proxy */
-        safeMoon = Safemoon(payable(address(new ERC1967Proxy(safeMoonImpl, ""))));
-        safeswapFactory = SafeswapFactory(payable(address(new ERC1967Proxy(safeswapFactoryImpl, ""))));
+        safeMoon = Safemoon(payable(address(new TransparentUpgradeableProxy(safeMoonImpl, proxyAdmin, ""))));
+        safeswapFactory = SafeswapFactory(payable(address(new TransparentUpgradeableProxy(safeswapFactoryImpl, proxyAdmin, ""))));
+        
         // safeswapPair = SafeswapPair(payable(address(new ERC1967Proxy(safeswapPairImpl, ""))));
         safeswapPair = SafeswapPair(safeswapPairImpl);
-        safeswapRouterProxy1 = SafeswapRouterProxy1(payable(address(new ERC1967Proxy(safeswapRouterProxy1Impl, ""))));
-        safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new ERC1967Proxy(safeswapRouterProxy2Impl, ""))));
-        safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new ERC1967Proxy(safeSwapTradeRouterImpl, ""))));
-        feeJar = FeeJar(payable(address(new ERC1967Proxy(feeJarImpl, ""))));
+
+        safeswapRouterProxy1 = SafeswapRouterProxy1(payable(address(new TransparentUpgradeableProxy(safeswapRouterProxy1Impl, proxyAdmin, ""))));
+        safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new TransparentUpgradeableProxy(safeswapRouterProxy2Impl, proxyAdmin, ""))));
+        safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new TransparentUpgradeableProxy(safeSwapTradeRouterImpl, proxyAdmin, ""))));
+        feeJar = FeeJar(payable(address(new TransparentUpgradeableProxy(feeJarImpl, proxyAdmin, ""))));
+        feeVault = FeeVaultV1(payable(address(new TransparentUpgradeableProxy(feeVaultV1Impl, proxyAdmin, ""))));
+
 
         vm.label(address(safeMoon), "safeMoon");
         vm.label(address(safeswapFactory), "safeswapFactory");
@@ -125,13 +138,17 @@ contract TestSetup is Script {
     }
 
     function _initializeAndSetConfigs() internal {
-        vm.startBroadcast(owner);
+
+        vm.startBroadcast(pvk_Owner);
+
+        /* FeeVault */
+        feeVault.initialize(address(safeMoon));
 
         /* SafeMoon */
         //! safeMoon 초기화 -> 매수 매도시 2.5% TAX , 2.5%는 LP 제공 + 번을 위해 feeSetter로 전송
         //! 테스트를 위해 기존 코드 수정 __Safemoon_tiers_init
         //!  excludeFromReward -> require(!_isExcluded[account], "Invalid"); 제거
-        safeMoon.initialize();
+        safeMoon.initialize(address(feeVault));
         safeMoon.setWhitelistMintBurn(owner, true);
         safeMoon.setBridgeBurnAddress(owner);
 
