@@ -8,6 +8,7 @@ import { Safemoon } from "../src/implmentation/Safemoon.sol";
 import { SafeswapFactory, SafeswapPair } from "../src/implmentation/SafeswapFactory.sol";
 import { SafeswapRouterProxy1 } from "../src/implmentation/SafeswapRouterProxy1.sol";
 import { SafeswapRouterProxy2 } from "../src/implmentation/SafeswapRouterProxy2.sol";
+import { FeeVaultV1 } from "../src/implmentation/FeeVaultV1.sol";
 import { FeeJar } from "../src/implmentation/FeeJar.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
@@ -25,6 +26,7 @@ contract UpgradeTest is TestSetup {
     address public safeswapRouterProxy2ImplNew;
     address public safeSwapTradeRouterImplNew;
     address public feeJarImplNew;
+    address public feeVaultV1New;
 
     function setUp() public {
         _testSetup();
@@ -63,6 +65,7 @@ contract UpgradeTest is TestSetup {
         safeswapRouterProxy2ImplNew = address(new SafeswapRouterProxy2());
         safeSwapTradeRouterImplNew = address(new SafeSwapTradeRouter());
         feeJarImplNew = address(new FeeJar());
+        feeVaultV1New = address(new FeeVaultV1());
 
         /* Upgrade Impl */
         ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(address(safeMoon)), safeMoonImplNew);
@@ -71,6 +74,7 @@ contract UpgradeTest is TestSetup {
         ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(address(safeswapRouterProxy2)), safeswapRouterProxy2ImplNew);
         ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(address(safeSwapTradeRouter)), safeSwapTradeRouterImplNew);
         ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(address(feeJar)), feeJarImplNew);
+        ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(address(feeVault)), feeVaultV1New);
 
         /* Check Impl */
         assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeMoon))), safeMoonImplNew, "safeMoon implementation is not new");
@@ -79,6 +83,8 @@ contract UpgradeTest is TestSetup {
         assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeswapRouterProxy2))), safeswapRouterProxy2ImplNew, "safeswapRouterProxy2 implementation is not new");
         assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(safeSwapTradeRouter))), safeSwapTradeRouterImplNew, "safeSwapTradeRouter implementation is not new");
         assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(feeJar))), feeJarImplNew, "feeJar implementation is not new");
+        assertEq(ProxyAdmin(proxyAdmin).getProxyImplementation(ITransparentUpgradeableProxy(address(feeVault))), feeVaultV1New, "feeVault implementation is not new");
+
 
         vm.stopPrank();
     }

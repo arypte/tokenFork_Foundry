@@ -7,6 +7,7 @@ import { SafeswapFactory, SafeswapPair } from "../src/implmentation/SafeswapFact
 import { SafeswapRouterProxy1 } from "../src/implmentation/SafeswapRouterProxy1.sol";
 import { SafeswapRouterProxy2 } from "../src/implmentation/SafeswapRouterProxy2.sol";
 import { FeeJar } from "../src/implmentation/FeeJar.sol";
+import { FeeVaultV1 } from "../src/implmentation/FeeVaultV1.sol";
 import { SafeSwapTradeRouter } from "../src/implmentation/SafeSwapTradeRouter.sol";
 import { ISafeswapERC20 } from "../src/interfaces/ISafeswapERC20.sol";
 
@@ -29,6 +30,7 @@ contract TestSetup is Test {
     address public safeswapPairImpl;
     address public safeSwapTradeRouterImpl;
     address public feeJarImpl;
+    address public feeVaultImpl;
 
     /* Proxy */
     Safemoon public safeMoon;
@@ -38,6 +40,8 @@ contract TestSetup is Test {
     SafeswapPair public safeswapPair;
     SafeSwapTradeRouter public safeSwapTradeRouter;
     FeeJar public feeJar ;
+    FeeVaultV1 public feeVault;
+
     
     /* User */
     address public accountA;
@@ -116,6 +120,7 @@ contract TestSetup is Test {
         safeswapRouterProxy2Impl = address(new SafeswapRouterProxy2());
         safeSwapTradeRouterImpl = address(new SafeSwapTradeRouter());
         feeJarImpl = address(new FeeJar());
+        feeVaultImpl = address(new FeeVaultV1());
 
         /* Deploy Proxy */
         safeMoon = Safemoon(payable(address(new TransparentUpgradeableProxy(safeMoonImpl, proxyAdmin, ""))));
@@ -128,6 +133,7 @@ contract TestSetup is Test {
         safeswapRouterProxy2 = SafeswapRouterProxy2(payable(address(new TransparentUpgradeableProxy(safeswapRouterProxy2Impl, proxyAdmin, ""))));
         safeSwapTradeRouter = SafeSwapTradeRouter(payable(address(new TransparentUpgradeableProxy(safeSwapTradeRouterImpl, proxyAdmin, ""))));
         feeJar = FeeJar(payable(address(new TransparentUpgradeableProxy(feeJarImpl, proxyAdmin, ""))));
+        feeVault = FeeVaultV1(payable(address(new TransparentUpgradeableProxy(feeVaultImpl, proxyAdmin, ""))));
 
         vm.label(address(safeMoon), "safeMoon");
         vm.label(address(safeswapFactory), "safeswapFactory");
