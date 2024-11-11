@@ -170,6 +170,14 @@ contract DeploySFT is TestSetup {
 
         console.log("after transfer owner balane" , safeMoon.balanceOf(owner));
 
+        payable(address(feeVault)).transfer(1 ether);
+
+        console.log("before transfer owner balane" , address(owner).balance);
+
+        feeVault.withdrawNative(1 ether);
+
+        console.log("after transfer owner balane" , address(owner).balance);
+
         vm.stopBroadcast();
         
     }
